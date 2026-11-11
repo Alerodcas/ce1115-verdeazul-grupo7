@@ -14,4 +14,4 @@ dj-database-url~=2.3          # parsea DATABASE_URL de Neon
 gunicorn~=23.0                # servidor WSGI
 whitenoise~=6.9               # estáticos sin bucket externo
 argon2-cffi~=23.1             # hasher Argon2id (Parte 1, "Almacenamiento de credenciales")
-requests~=2.32                # cliente HTTP hacia el PDP (OPA) por loopback
+requests~=2.34                # cliente HTTP hacia el PDP (OPA) por loopback
