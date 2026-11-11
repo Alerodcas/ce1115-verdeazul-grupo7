@@ -12,14 +12,14 @@
 # =============================================================================
 
 # --- Etapa 1: compilar Caddy con el módulo de límite de tasa -----------------
-FROM caddy:2.9-builder-alpine AS builder
+FROM caddy:2.10-builder-alpine AS builder
 
 RUN xcaddy build \
     --with github.com/mholt/caddy-ratelimit
 
 
 # --- Etapa 2: imagen final ---------------------------------------------------
-FROM caddy:2.9-alpine AS runtime
+FROM caddy:2.11-alpine AS runtime
 
 ARG APP_VERSION=dev
 ARG GIT_SHA=unknown
