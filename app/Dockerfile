@@ -12,7 +12,7 @@
 # =============================================================================
 
 # --- Etapa 1: construir las dependencias -------------------------------------
-FROM python:3.12-slim-bookworm AS builder
+FROM python:3.15-slim-bookworm AS builder
 
 # Para fijar también el contenido y no solo la etiqueta, reemplazar la línea de
 # arriba por la forma con digest, que se obtiene con:
@@ -37,7 +37,7 @@ RUN python -m venv /opt/venv \
 
 
 # --- Etapa 2: imagen final ---------------------------------------------------
-FROM python:3.12-slim-bookworm AS runtime
+FROM python:3.15-slim-bookworm AS runtime
 
 ARG APP_VERSION=dev
 ARG GIT_SHA=unknown
