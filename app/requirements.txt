@@ -1,0 +1,17 @@
+# Dependencias de producción — Verdeazul Carbono S.A. (CE-1115, Grupo 7)
+#
+# Política de versionado (Parte 1, sección "Selección de tecnologías"):
+# las versiones se fijan y se auditan antes de construir. Aquí se fijan con
+# `~=` (compatible release). Para la entrega final se genera el lock con
+# hashes:  pip-compile --generate-hashes -o requirements.lock requirements.txt
+#
+# Dependabot vigila este archivo (.github/dependabot.yml) — responsable: Eder.
+
+Django~=5.2.0                 # LTS, soporte hasta abril 2028
+djangorestframework~=3.18.2
+psycopg[binary]~=3.2          # driver PostgreSQL 3.x (Neon)
+dj-database-url~=2.3          # parsea DATABASE_URL de Neon
+gunicorn~=23.0                # servidor WSGI
+whitenoise~=6.9               # estáticos sin bucket externo
+argon2-cffi~=23.1             # hasher Argon2id (Parte 1, "Almacenamiento de credenciales")
+requests~=2.32                # cliente HTTP hacia el PDP (OPA) por loopback

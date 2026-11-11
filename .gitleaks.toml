@@ -1,0 +1,36 @@
+# Configuración de gitleaks (Parte 1, regla 4 de gestión de secretos:
+# "el repositorio se escanea en cada commit y en integración continua").
+#
+# Si un secreto entra al historial se considera comprometido y se rota.
+# Borrar el commit NO basta: el historial persiste en los clones.
+
+title = "Verdeazul — reglas de detección de secretos"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "neon-connection-string"
+description = "Cadena de conexión de Neon con credenciales"
+regex = '''postgres(?:ql)?://[^:\s]+:[^@\s]+@[^/\s]*neon\.tech'''
+tags = ["base-de-datos", "neon"]
+
+[[rules]]
+id = "django-secret-key"
+description = "SECRET_KEY de Django escrita en el código"
+regex = '''(?i)SECRET_KEY\s*[:=]\s*["'][^"']{20,}["']'''
+tags = ["django"]
+
+[allowlist]
+description = "Valores de ejemplo que no son secretos reales"
+paths = [
+  '''\.env\.example$''',
+  '''deploy/config\.env\.example$''',
+  '''docs/.*\.md$''',
+]
+regexes = [
+  '''solo-para-desarrollo-no-usar-en-la-nube''',
+  '''dev-only-insecure-key''',
+  '''build-time-only''',
+  '''POSTGRES_PASSWORD: verdeazul''',
+]

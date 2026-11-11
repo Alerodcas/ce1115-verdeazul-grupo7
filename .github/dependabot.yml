@@ -1,0 +1,47 @@
+# =============================================================================
+#  Dependabot — §3.3 del enunciado
+#  RESPONSABLE: Eder (gestión de secretos y seguridad heredada).
+#
+#  Este archivo deja Dependabot configurado para las tres superficies de
+#  dependencias del proyecto. Falta lo que no se puede hacer desde un archivo:
+#    · activar "Dependabot alerts" y "Dependabot security updates" en
+#      Settings -> Code security del repositorio;
+#    · atender al menos UNA alerta durante el proyecto y documentarla.
+#  Las dos cosas se evalúan.
+# =============================================================================
+version: 2
+updates:
+  # --- dependencias de Python ------------------------------------------------
+  - package-ecosystem: "pip"
+    directory: "/app"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    labels: ["dependencias", "seguridad"]
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+
+  # --- imágenes base de los tres contenedores --------------------------------
+  - package-ecosystem: "docker"
+    directories:
+      - "/app"
+      - "/caddy"
+      - "/opa"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencias", "contenedores"]
+    commit-message:
+      prefix: "deps(docker)"
+
+  # --- acciones de GitHub usadas en CI ---------------------------------------
+  # También son dependencias: una acción comprometida corre con los permisos
+  # del flujo de trabajo.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["dependencias", "ci"]

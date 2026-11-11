@@ -1,0 +1,77 @@
+# =============================================================================
+#  Entorno LOCAL de desarrollo — no es lo que corre en producción
+#  CE-1115 Proyecto Parte 2 · Grupo 7
+#
+#  Reproduce la misma topología que Cloud Run: Caddy adelante, la aplicación y
+#  el motor de decisión detrás. La diferencia es que aquí la base de datos es
+#  un contenedor, y en la nube es Neon.
+#
+#  Uso:  cp .env.example .env
+#        docker compose up --build
+#        abrir http://localhost:8080
+#
+#  Solo el puerto de Caddy se publica al anfitrión. La aplicación y OPA quedan
+#  en la red interna, igual que en la instancia de Cloud Run.
+# =============================================================================
+name: verdeazul
+
+services:
+  caddy:
+    build:
+      context: ./caddy
+    environment:
+      PORT: "8080"
+      APP_PORT: "8000"
+    depends_on:
+      app:
+        condition: service_started
+    # En local la aplicación no está en loopback sino en otro contenedor, así
+    # que el Caddyfile apunta a 127.0.0.1 y aquí se comparte el espacio de red
+    # del contenedor de la aplicación para que esa dirección siga siendo válida.
+    network_mode: "service:app"
+
+  app:
+    build:
+      context: ./app
+      args:
+        APP_VERSION: dev-local
+    env_file: .env
+    environment:
+      GUNICORN_BIND: "0.0.0.0:8000"
+      RUN_MIGRATIONS: "true"
+      OPA_URL: "http://127.0.0.1:8181"
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8080:8080"   # lo expone Caddy, que comparte esta red
+
+  opa:
+    build:
+      context: ./opa
+    network_mode: "service:app"
+    command:
+      - run
+      - --server
+      - --addr
+      - 127.0.0.1:8181
+      - --log-level
+      - error
+      - /policies
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: verdeazul
+      POSTGRES_PASSWORD: verdeazul   # solo local; en la nube es Neon + Secret Manager
+      POSTGRES_DB: verdeazul
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U verdeazul"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    volumes:
+      - datos_locales:/var/lib/postgresql/data
+
+volumes:
+  datos_locales:

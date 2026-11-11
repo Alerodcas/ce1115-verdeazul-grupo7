@@ -1,0 +1,131 @@
+# =============================================================================
+#  Integración continua — CE-1115 Proyecto Parte 2 · Grupo 7
+#
+#  Parte 1, sección "Selección de tecnologías": en integración continua se
+#  ejecutan gitleaks, Bandit, pip-audit, Trivy sobre las imágenes y opa test.
+#  Si alguno falla, no se despliega.
+#
+#  Responsable del archivo: Alejandra. Cada quien es responsable de que su
+#  parte pase: si tu política de Rego no compila, el equipo no despliega.
+# =============================================================================
+name: CI
+
+on:
+  push:
+    branches: ["main", "develop"]
+  pull_request:
+    branches: ["main", "develop"]
+
+# Permisos mínimos: el flujo solo necesita leer el código.
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  secretos:
+    name: Secretos en el repositorio (gitleaks)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # el historial completo: un secreto borrado sigue ahí
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITLEAKS_CONFIG: .gitleaks.toml
+
+  # ---------------------------------------------------------------------------
+  python:
+    name: Lint, análisis estático y vulnerabilidades (Python)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: app/requirements-dev.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements-dev.txt
+
+      - name: ruff (lint)
+        run: ruff check .
+
+      - name: bandit (análisis estático de seguridad)
+        run: bandit -r . -ll --exclude ./staticfiles
+
+      - name: pip-audit (vulnerabilidades conocidas)
+        run: pip-audit -r requirements.txt
+
+      - name: Comprobación de despliegue de Django
+        env:
+          DJANGO_DEBUG: "False"
+          DJANGO_SECRET_KEY: clave-solo-para-la-comprobacion-de-ci-no-es-un-secreto
+          DJANGO_ALLOWED_HOSTS: ejemplo.run.app
+          DATABASE_URL: sqlite:///ci.sqlite3
+        run: python manage.py check --deploy --fail-level WARNING
+
+      - name: Pruebas
+        env:
+          DJANGO_DEBUG: "True"
+          DJANGO_SECRET_KEY: clave-solo-para-la-comprobacion-de-ci-no-es-un-secreto
+          DATABASE_URL: sqlite:///ci.sqlite3
+        run: python manage.py test
+
+  # ---------------------------------------------------------------------------
+  politicas:
+    name: Política de autorización (OPA)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar OPA
+        run: |
+          curl -fsSL -o /usr/local/bin/opa \
+            https://openpolicyagent.org/downloads/v1.0.0/opa_linux_amd64_static
+          chmod +x /usr/local/bin/opa
+      - name: opa check (la política compila)
+        run: opa check opa/policies
+      - name: opa test (las reglas hacen lo que dicen)
+        run: opa test opa/policies -v
+
+  # ---------------------------------------------------------------------------
+  imagenes:
+    name: Construcción y análisis de las imágenes
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        componente: [app, caddy, opa]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Construir ${{ matrix.componente }}
+        run: |
+          docker build \
+            --build-arg APP_VERSION=ci-${GITHUB_SHA::7} \
+            --build-arg GIT_SHA=${GITHUB_SHA::7} \
+            -t verdeazul-${{ matrix.componente }}:ci \
+            ./${{ matrix.componente }}
+
+      - name: Comprobar que el contenedor NO corre como root
+        # Control explícito del enunciado (§3.2). Si USER quedó en 0, falla.
+        run: |
+          usuario=$(docker image inspect verdeazul-${{ matrix.componente }}:ci \
+                      --format '{{.Config.User}}')
+          echo "USER de la imagen: '${usuario}'"
+          if [ -z "${usuario}" ] || [ "${usuario}" = "root" ] || [ "${usuario%%:*}" = "0" ]; then
+            echo "ERROR: la imagen correría como root."
+            exit 1
+          fi
+
+      - name: Trivy (vulnerabilidades de la imagen)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: verdeazul-${{ matrix.componente }}:ci
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"   # informa, no bloquea: subir a 1 cuando esté estable

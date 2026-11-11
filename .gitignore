@@ -1,0 +1,46 @@
+# =============================================================================
+#  Nada sensible entra al repositorio.
+#  Credenciales en el repositorio = se pierde el total del criterio de
+#  secretos (§7.1 del enunciado), aunque el sistema funcione.
+# =============================================================================
+
+# --- secretos y configuración local ---
+.env
+.env.*
+!.env.example
+deploy/config.env
+*.pem
+*.key
+*.p12
+*.pfx
+*-key.json
+service-account*.json
+credentials*.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# --- Django ---
+db.sqlite3
+dev.sqlite3
+staticfiles/
+media/
+local_settings.py
+
+# --- herramientas ---
+.coverage
+htmlcov/
+bandit-report.json
+
+# --- editores y sistema ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

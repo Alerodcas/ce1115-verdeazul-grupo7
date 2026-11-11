@@ -1,0 +1,34 @@
+# Configuración de las herramientas de análisis.
+# Se versiona para que CI y la máquina de cada quien revisen exactamente lo
+# mismo y nadie tenga que adivinar por qué "en mi máquina sí pasa".
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+exclude = ["staticfiles", "migrations", ".venv"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # errores de estilo de pycodestyle
+    "F",   # pyflakes: nombres sin usar, importaciones muertas
+    "B",   # bugbear: trampas comunes
+    "S",   # bandit a través de ruff: patrones inseguros
+    "DJ",  # reglas propias de Django
+    "UP",  # sintaxis anticuada
+    "I",   # orden de las importaciones
+]
+ignore = [
+    "E501",  # longitud de línea: la revisa el formateador, no el lint
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Capturar Exception es deliberado en estos dos puntos: ambos tienen que
+# DENEGAR o reportar "no disponible" pase lo que pase, nunca propagar el error
+# ni dejar pasar la petición. Está comentado en el código.
+"authz/pdp.py" = ["BLE001"]
+"core/views.py" = ["BLE001"]
+# Las pruebas usan credenciales de juguete a propósito.
+"*/tests.py" = ["S105", "S106"]
+
+[tool.bandit]
+exclude_dirs = ["staticfiles", ".venv", "migrations"]

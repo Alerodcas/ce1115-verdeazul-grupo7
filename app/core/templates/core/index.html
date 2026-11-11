@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verdeazul Carbono S.A. — Certificación</title>
+  <style>
+    :root { color-scheme: light; }
+    body { font-family: system-ui, sans-serif; margin: 0; background: #f6f7f5; color: #1c2321; }
+    header { background: #14532d; color: #fff; padding: 1.25rem 1.5rem; }
+    header h1 { margin: 0; font-size: 1.15rem; font-weight: 600; }
+    main { max-width: 46rem; margin: 2rem auto; padding: 0 1.5rem; }
+    .card { background: #fff; border: 1px solid #dfe3dd; border-radius: 6px; padding: 1.25rem 1.5rem; }
+    h2 { font-size: 1rem; margin-top: 0; }
+    ul { padding-left: 1.1rem; line-height: 1.7; }
+    code { background: #eef0ec; padding: 0.1rem 0.3rem; border-radius: 3px; }
+    footer { max-width: 46rem; margin: 1rem auto 3rem; padding: 0 1.5rem; color: #5b635e; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <header><h1>Verdeazul Carbono S.A. · Sistema de certificación</h1></header>
+  <main>
+    <div class="card">
+      <h2>Despliegue activo</h2>
+      <p>El sistema responde por HTTPS desde Cloud Run. Esta portada existe para
+         comprobar el despliegue; las pantallas del negocio se agregan encima.</p>
+      <ul>
+        <li>Versión de la imagen: <code>{{ version }}</code></li>
+        <li>Sonda de vida: <code>/healthz</code></li>
+        <li>Sonda de base de datos: <code>/readyz</code></li>
+      </ul>
+    </div>
+  </main>
+  <footer>CE-1115 Seguridad de la Información · Grupo 7 (Byte Busters) · ITCR</footer>
+</body>
+</html>

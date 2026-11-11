@@ -1,0 +1,35 @@
+# Lo que NO debe entrar en la imagen. Dos razones: que la imagen sea pequeña,
+# y sobre todo que un secreto local no termine horneado en una capa publicada
+# en Artifact Registry.
+
+.git
+.github
+.gitignore
+.dockerignore
+
+.env
+.env.*
+deploy/config.env
+*.pem
+*.key
+*-key.json
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+db.sqlite3
+dev.sqlite3
+staticfiles/
+media/
+
+docs/
+*.md
+compose.yaml
+.vscode/
+.idea/
+.DS_Store

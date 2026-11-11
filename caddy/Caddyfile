@@ -1,0 +1,101 @@
+# =============================================================================
+#  Caddy — contenedor de ingreso (Zona 1: perímetro)
+#  CE-1115 Proyecto Parte 2 · Grupo 7
+#
+#  Es el único contenedor de la instancia que recibe tráfico de Cloud Run.
+#  La aplicación escucha en 127.0.0.1:8000 y no es alcanzable desde fuera.
+#
+#  Qué hace aquí (frontera F1 de la Parte 1):
+#    · límite de tamaño de la petición
+#    · límite de tasa por dirección de origen
+#    · métodos permitidos
+#    · cabeceras de seguridad de la respuesta
+#    · oculta la cabecera Server
+#
+#  Qué YA NO hace, y es una desviación documentada respecto a la Parte 1:
+#    la terminación de TLS y la renovación ACME. En Cloud Run eso lo hace el
+#    front end de Google con un certificado gestionado para *.run.app. Por eso
+#    `auto_https off`. Ver docs/DESVIACIONES.md (D-01).
+# =============================================================================
+
+{
+	# Sin TLS aquí: el tráfico ya llegó descifrado desde el front end de Google.
+	auto_https off
+	admin off
+
+	# El único camino hacia este contenedor pasa por el balanceador de Cloud Run,
+	# que reescribe X-Forwarded-For con la dirección real del cliente. Por eso se
+	# puede confiar en esa cabecera: no hay forma de llegar aquí sin pasar por él.
+	servers {
+		trusted_proxies static 0.0.0.0/0 ::/0
+		client_ip_headers X-Forwarded-For
+	}
+
+	order rate_limit before basic_auth
+}
+
+:{$PORT:8080} {
+	log {
+		output stdout
+		format json
+		# No se registra la cadena de consulta ni las cabeceras: pueden traer
+		# identificadores del negocio o tokens.
+	}
+
+	# --- Límite de tasa por cliente (frontera F1) ---------------------------
+	# Dos ventanas: una corta contra ráfagas, una larga contra fuerza bruta
+	# sostenida contra el inicio de sesión.
+	rate_limit {
+		zone rafaga {
+			key {client_ip}
+			events 120
+			window 1m
+		}
+		zone sostenido {
+			key {client_ip}
+			events 1200
+			window 1h
+		}
+	}
+
+	# --- Tamaño máximo de la petición ---------------------------------------
+	request_body {
+		max_size 2MB
+	}
+
+	# --- Métodos permitidos --------------------------------------------------
+	@metodo_no_permitido not method GET HEAD POST PUT PATCH DELETE OPTIONS
+	respond @metodo_no_permitido 405
+
+	# --- Cabeceras de seguridad de la respuesta ------------------------------
+	header {
+		-Server
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		Cross-Origin-Opener-Policy "same-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+		Content-Security-Policy "default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+	}
+
+	# --- Hacia la aplicación (frontera F2) -----------------------------------
+	reverse_proxy 127.0.0.1:{$APP_PORT:8000} {
+		# Se preserva el esquema original para que Django sepa que la petición
+		# llegó por HTTPS (SECURE_PROXY_SSL_HEADER en settings.py).
+		header_up X-Forwarded-Proto {header.X-Forwarded-Proto}
+		header_up X-Forwarded-For {client_ip}
+		header_up X-Real-IP {client_ip}
+		header_up Host {host}
+
+		transport http {
+			dial_timeout 5s
+			response_header_timeout 60s
+		}
+	}
+
+	# Mensajes de error genéricos: no se filtra qué componente falló.
+	handle_errors {
+		respond "La solicitud no se pudo procesar." {err.status_code}
+	}
+}

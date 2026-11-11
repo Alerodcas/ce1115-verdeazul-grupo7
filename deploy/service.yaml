@@ -1,0 +1,147 @@
+# =============================================================================
+#  Servicio de Cloud Run — Verdeazul Carbono S.A.
+#  CE-1115 Proyecto Parte 2 · Grupo 7
+#
+#  Tres contenedores en una sola instancia. Comparten la interfaz de red local,
+#  así que `localhost` dentro de la instancia es privado: ningún puerto salvo
+#  el de Caddy es alcanzable desde internet.
+#
+#      internet ──HTTPS──> front end de Google ──HTTP──> caddy:8080   (ingreso)
+#                                                          │ loopback
+#                                                          ▼
+#                                                        app:8000     (PEP)
+#                                                          │ loopback
+#                                                          ▼
+#                                                        opa:8181     (PDP)
+#
+#  NO se edita a mano para desplegar: se usa deploy/deploy.sh, que sustituye
+#  las variables ${...} y llama a `gcloud run services replace`.
+#
+#  Ningún secreto aparece en este archivo: solo REFERENCIAS a Secret Manager.
+#  Este archivo se versiona en el repositorio sin riesgo.
+# =============================================================================
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: ${SERVICE_NAME}
+  labels:
+    cloud.googleapis.com/location: ${REGION}
+  annotations:
+    # Los servicios con varios contenedores requieren esta etapa de lanzamiento.
+    run.googleapis.com/launch-stage: BETA
+    run.googleapis.com/ingress: all
+    run.googleapis.com/description: "Sistema de certificacion de carbono - Grupo 7 CE-1115"
+spec:
+  template:
+    metadata:
+      # La revisión lleva la versión en el nombre: al mirar la consola se sabe
+      # qué está corriendo sin ir a buscar el digest de la imagen.
+      name: ${SERVICE_NAME}-${REVISION_SUFFIX}
+      annotations:
+        # Orden de arranque: primero el motor de decisión, luego la aplicación,
+        # y Caddy de último. Así el proxy nunca reenvía a algo que no está listo.
+        run.googleapis.com/container-dependencies: '{"app":["opa"],"caddy":["app"]}'
+        # Techo de instancias: protege la capa gratuita de un pico inesperado
+        # (§3.1 del enunciado, "Cuidado con el consumo").
+        autoscaling.knative.dev/maxScale: "2"
+        autoscaling.knative.dev/minScale: "0"
+        run.googleapis.com/startup-cpu-boost: "true"
+    spec:
+      # Cuenta de servicio propia, con los permisos mínimos. NO la cuenta por
+      # omisión de Compute Engine, que es Editor de todo el proyecto.
+      serviceAccountName: ${RUNTIME_SA}
+      timeoutSeconds: 120
+      containerConcurrency: 40
+      containers:
+        # ---------------------------------------------------------------------
+        #  ZONA 1 — perímetro. Único contenedor con `ports`: es el de ingreso.
+        # ---------------------------------------------------------------------
+        - name: caddy
+          image: ${REGISTRY}/caddy:${IMAGE_TAG}
+          ports:
+            - name: http1
+              containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: APP_PORT
+              value: "8000"
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          startupProbe:
+            tcpSocket:
+              port: 8080
+            timeoutSeconds: 5
+            periodSeconds: 5
+            failureThreshold: 20
+
+        # ---------------------------------------------------------------------
+        #  ZONA 2 — aplicación (PEP). Sin `ports`: no recibe tráfico externo.
+        # ---------------------------------------------------------------------
+        - name: app
+          image: ${REGISTRY}/app:${IMAGE_TAG}
+          env:
+            - name: APP_PORT
+              value: "8000"
+            - name: APP_VERSION
+              value: "${IMAGE_TAG}"
+            - name: DJANGO_DEBUG
+              value: "False"
+            - name: DJANGO_ALLOWED_HOSTS
+              value: "${PUBLIC_HOST}"
+            - name: DJANGO_CSRF_TRUSTED_ORIGINS
+              value: "https://${PUBLIC_HOST}"
+            - name: OPA_URL
+              value: "http://127.0.0.1:8181"
+            # --- secretos: solo referencias, nunca valores -------------------
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: verdeazul-django-secret-key
+                  key: latest
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: verdeazul-database-url
+                  key: latest
+            # Clave privada de firma de certificados (responsable: Luis).
+            # Se inyecta igual que las demás: el código nunca la ve en disco.
+            - name: CERT_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: verdeazul-cert-signing-key
+                  key: latest
+          resources:
+            limits:
+              cpu: 600m
+              memory: 512Mi
+          # Sonda TCP, no HTTP: las sondas httpGet solo están disponibles para
+          # el contenedor de ingreso. Si esta sonda falla en el despliegue,
+          # agregar  GUNICORN_BIND=0.0.0.0:8000  a este bloque `env`.
+          startupProbe:
+            tcpSocket:
+              port: 8000
+            timeoutSeconds: 5
+            periodSeconds: 5
+            failureThreshold: 30
+
+        # ---------------------------------------------------------------------
+        #  ZONA 2 — motor de decisión (PDP). Solo loopback (frontera F3).
+        # ---------------------------------------------------------------------
+        - name: opa
+          image: ${REGISTRY}/opa:${IMAGE_TAG}
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          startupProbe:
+            tcpSocket:
+              port: 8181
+            timeoutSeconds: 5
+            periodSeconds: 5
+            failureThreshold: 20
+  traffic:
+    - percent: 100
+      latestRevision: true

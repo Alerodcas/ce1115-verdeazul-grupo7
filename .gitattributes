@@ -1,0 +1,14 @@
+# Normaliza los finales de linea en el repositorio.
+# Critico para los .sh y los Dockerfile: con CRLF, el contenedor falla en
+# Linux con "bad interpreter" o "not found" al arrancar.
+* text=auto eol=lf
+*.sh text eol=lf
+entrypoint.sh text eol=lf
+Dockerfile text eol=lf
+Caddyfile text eol=lf
+*.rego text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.png binary
+*.jpg binary
+*.pdf binary
