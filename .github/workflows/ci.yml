@@ -30,7 +30,7 @@ jobs:
         with:
           fetch-depth: 0   # el historial completo: un secreto borrado sigue ahí
       - name: gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITLEAKS_CONFIG: .gitleaks.toml
 
