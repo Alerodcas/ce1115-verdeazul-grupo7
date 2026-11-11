@@ -26,7 +26,7 @@ jobs:
     name: Secretos en el repositorio (gitleaks)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0   # el historial completo: un secreto borrado sigue ahí
       - name: gitleaks
@@ -42,7 +42,7 @@ jobs:
       run:
         working-directory: ./app
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -81,7 +81,7 @@ jobs:
     name: Política de autorización (OPA)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Instalar OPA
         run: |
           curl -fsSL -o /usr/local/bin/opa \
@@ -101,7 +101,7 @@ jobs:
       matrix:
         componente: [app, caddy, opa]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Construir ${{ matrix.componente }}
         run: |
