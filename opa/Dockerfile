@@ -11,7 +11,7 @@
 #  enunciado pide poder rastrear (§3.2).
 # =============================================================================
 
-FROM openpolicyagent/opa:1.0.0-static
+FROM openpolicyagent/opa:1.22.2-static
 
 ARG APP_VERSION=dev
 ARG GIT_SHA=unknown
