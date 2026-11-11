@@ -3,5 +3,5 @@
 -r requirements.txt
 
 bandit~=1.8        # análisis estático de seguridad en Python
-pip-audit~=2.7     # vulnerabilidades conocidas en dependencias
+pip-audit~=2.10     # vulnerabilidades conocidas en dependencias
 ruff~=0.9          # lint y formato
