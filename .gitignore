@@ -44,3 +44,4 @@ bandit-report.json
 .idea/
 .DS_Store
 Thumbs.db
+.neon

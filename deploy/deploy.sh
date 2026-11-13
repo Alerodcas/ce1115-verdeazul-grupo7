@@ -42,8 +42,34 @@ PLANTILLA=./deploy/service.yaml
 GENERADO="$(mktemp -t verdeazul-service-XXXXXX.yaml)"
 trap 'rm -f "${GENERADO}"' EXIT
 
-envsubst '${SERVICE_NAME} ${REGION} ${REVISION_SUFFIX} ${RUNTIME_SA} ${REGISTRY} ${IMAGE_TAG} ${PUBLIC_HOST}' \
-    < "${PLANTILLA}" > "${GENERADO}"
+# Sustitucion de variables. Se prefiere envsubst, pero no existe en todos los
+# entornos (Git Bash en Windows, por ejemplo), asi que hay respaldo en Python.
+VARIABLES='${SERVICE_NAME} ${REGION} ${REVISION_SUFFIX} ${RUNTIME_SA} ${REGISTRY} ${IMAGE_TAG} ${PUBLIC_HOST}'
+if command -v envsubst >/dev/null 2>&1; then
+    envsubst "${VARIABLES}" < "${PLANTILLA}" > "${GENERADO}"
+else
+    echo "envsubst no esta disponible; se usa Python para sustituir las variables."
+    python3 -c '
+import os, re, sys
+nombres = ["SERVICE_NAME","REGION","REVISION_SUFFIX","RUNTIME_SA","REGISTRY","IMAGE_TAG","PUBLIC_HOST"]
+faltan = [n for n in nombres if os.environ.get(n) is None]
+if faltan:
+    sys.exit("faltan variables de entorno: " + ", ".join(faltan))
+texto = open(sys.argv[1], encoding="utf-8").read()
+texto = re.sub(r"\$\{(" + "|".join(nombres) + r")\}", lambda m: os.environ[m.group(1)], texto)
+open(sys.argv[2], "w", encoding="utf-8").write(texto)
+' "${PLANTILLA}" "${GENERADO}"
+fi
+
+# Si quedo alguna de las siete variables sin sustituir, el manifiesto es invalido:
+# mejor parar aqui que desplegar una imagen con la etiqueta literal '${IMAGE_TAG}'.
+# Se buscan los nombres exactos, no cualquier '${', porque los comentarios del
+# propio YAML mencionan la sintaxis.
+if grep -qE '\$\{(SERVICE_NAME|REGION|REVISION_SUFFIX|RUNTIME_SA|REGISTRY|IMAGE_TAG|PUBLIC_HOST)\}' "${GENERADO}"; then
+    echo "ERROR: quedaron variables sin sustituir en el manifiesto:" >&2
+    grep -nE '\$\{(SERVICE_NAME|REGION|REVISION_SUFFIX|RUNTIME_SA|REGISTRY|IMAGE_TAG|PUBLIC_HOST)\}' "${GENERADO}" >&2
+    exit 1
+fi
 
 echo "=== Manifiesto que se va a aplicar ==="
 grep -E 'image:|name:|serviceAccountName' "${GENERADO}"
