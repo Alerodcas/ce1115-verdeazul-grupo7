@@ -40,9 +40,17 @@ construir() {
     local componente="$1" contexto="$2"
     echo
     echo "=== ${componente} : ${VERSION} (${GIT_SHA}) ==="
+    # --service-account: se construye con la identidad de despliegue, que tiene
+    #   lo justo para construir y publicar, y ningún acceso a los secretos. Sin
+    #   esta bandera, Cloud Build usa la cuenta por omisión de Compute Engine,
+    #   que en los proyectos nuevos no tiene permisos y falla.
+    # --default-buckets-behavior: con una identidad propia hay que mandar los
+    #   registros a un bucket regional del propio proyecto.
     gcloud builds submit "${contexto}" \
         --project="${PROJECT_ID}" \
         --tag="${REGISTRY}/${componente}:${VERSION}" \
+        --service-account="projects/${PROJECT_ID}/serviceAccounts/${DEPLOY_SA}" \
+        --default-buckets-behavior=regional-user-owned-bucket \
         --quiet
     # Segunda etiqueta con el hash del commit, sobre la MISMA imagen.
     gcloud artifacts docker tags add \
