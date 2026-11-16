@@ -21,12 +21,12 @@ Parte 1 con las piezas que exige el enunciado de la Parte 2.
                    ┌─────────────────────────────────────────────┐
   internet         │          instancia de Cloud Run             │
      │             │                                             │
-     │  HTTPS      │   ┌──────────┐  loopback  ┌──────────────┐  │
+     │  HTTPS      │   ┌──────────┐  interno   ┌──────────────┐  │
      └────────────►│   │  caddy   │───────────►│     app      │  │
    front end de    │   │  :8080   │            │ Django + DRF │  │
    Google (TLS)    │   │ Zona 1   │            │  (PEP) :8000 │  │
                    │   └──────────┘            └───────┬──────┘  │
-                   │                                   │loopback │
+                   │                                   │interno  │
                    │                           ┌───────▼──────┐  │
                    │                           │     opa      │  │
                    │                           │  (PDP) :8181 │  │
@@ -44,8 +44,8 @@ Parte 1 con las piezas que exige el enunciado de la Parte 2.
 | Contenedor | Imagen | Puerto | Qué hace |
 |---|---|---|---|
 | `caddy` | `…/verdeazul/caddy` | 8080 (ingreso) | Único expuesto. Límite de tasa y de tamaño, métodos permitidos, cabeceras de seguridad. |
-| `app` | `…/verdeazul/app` | 8000 (loopback) | Django + DRF. Autenticación, sesión, validación, punto de aplicación de la política (PEP). |
-| `opa` | `…/verdeazul/opa` | 8181 (loopback) | Motor de decisión (PDP) con las reglas de la matriz en Rego. No alcanzable desde internet. |
+| `app` | `…/verdeazul/app` | 8000 (interno) | Django + DRF. Autenticación, sesión, validación, punto de aplicación de la política (PEP). |
+| `opa` | `…/verdeazul/opa` | 8181 (interno) | Motor de decisión (PDP) con las reglas de la matriz en Rego. No alcanzable desde internet. |
 
 Detalle de componentes, fronteras de confianza y desviaciones respecto a la
 Parte 1: [`docs/ARQUITECTURA-DESPLEGADA.md`](docs/ARQUITECTURA-DESPLEGADA.md) y

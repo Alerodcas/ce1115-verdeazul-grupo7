@@ -25,7 +25,7 @@ que no existen fuera de la instancia.
 |---|---|---|---|
 | `caddy` | `REGION-docker.pkg.dev/PROYECTO/verdeazul/caddy:vX.Y.Z` | Zona 1, perímetro | Único contenedor expuesto. Límite de tasa y de tamaño, métodos permitidos, cabeceras de seguridad. |
 | `app` | `…/verdeazul/app:vX.Y.Z` | Zona 2, aplicación | Django + DRF. Autenticación, sesión, validación de entrada, punto de aplicación de la política (PEP). |
-| `opa` | `…/verdeazul/opa:vX.Y.Z` | Zona 2, aplicación | Motor de decisión (PDP). Reglas RBAC2 + ABAC en Rego. Solo loopback. |
+| `opa` | `…/verdeazul/opa:vX.Y.Z` | Zona 2, aplicación | Motor de decisión (PDP). Reglas RBAC2 + ABAC en Rego. Sin puerto de ingreso. |
 | Neon PostgreSQL | servicio gestionado | Zona 3, datos | Datos del negocio, sesiones, contadores del control por historial y bitácora. |
 | Secret Manager | servicio gestionado | Zona 3, secretos | Los tres secretos del sistema, inyectados como variables de entorno. |
 
@@ -37,7 +37,7 @@ que no existen fuera de la instancia.
 |---|---|---|
 | **F1** Internet → perímetro | TLS 1.2+ terminado por el front end de Google con certificado gestionado. Caddy aplica límite de tasa por dirección de origen (dos ventanas: 120/min y 1200/h), tamaño máximo de 2 MB y lista de métodos permitidos. | `caddy/Caddyfile` |
 | **F2** Perímetro → aplicación | Conexión por la red local de la instancia. Caddy reenvía `X-Forwarded-Proto` y la dirección real del cliente. Django revalida todo: tipos, formato, token CSRF y sesión. | `caddy/Caddyfile`, `app/config/settings.py` |
-| **F3** Aplicación → motor de decisión | HTTP solo por `127.0.0.1:8181`. El contenedor `opa` no declara puerto de ingreso, así que no es alcanzable desde fuera. La entrada de la decisión se arma en el servidor con datos leídos de la base. | `app/authz/pdp.py`, `deploy/service.yaml` |
+| **F3** Aplicación → motor de decisión | HTTP por el puerto 8181 dentro de la instancia. El contenedor `opa` **no declara puerto de ingreso**, y Cloud Run solo enruta tráfico de internet al puerto que declara el contenedor de ingreso, así que el PDP no es alcanzable desde fuera. El aislamiento lo da la plataforma y no la dirección de escucha: ver desviación D-05. La entrada de la decisión se arma en el servidor con datos leídos de la base. | `app/authz/pdp.py`, `deploy/service.yaml` |
 | **F4** Aplicación → base de datos | TLS obligatorio (`sslmode=require`) hacia Neon. Credencial en Secret Manager, nunca en el código. | `app/config/settings.py`, `deploy/service.yaml` |
 | **F5** Aplicación → secretos | Cloud Run resuelve las referencias de Secret Manager con la identidad de la cuenta de servicio del servicio, que solo tiene permiso de lectura sobre esos tres secretos. | `deploy/setup-gcp.sh` |
 | **F6** Aplicación → registro externo | **No implementada en esta entrega.** Ver `docs/DESVIACIONES.md` (D-03). | — |
@@ -75,8 +75,8 @@ Usa los mismos paquetes de TikZ que el documento de arquitectura de la Parte 1
 \node[caja] (cli) at (0,0) {Navegador\\(6 roles)};
 \node[caja] (gfe) at (4.3,0) {Front end de Google\\termina TLS};
 \node[caja] (cad) at (8.8,0) {Caddy\\contenedor de ingreso\\\texttt{:8080}};
-\node[caja] (app) at (13.6,0) {Django + DRF (PEP)\\\texttt{127.0.0.1:8000}};
-\node[caja] (opa) at (13.6,2.7) {OPA (PDP)\\\texttt{127.0.0.1:8181}};
+\node[caja] (app) at (13.6,0) {Django + DRF (PEP)\\\texttt{:8000} (sin ingreso)};
+\node[caja] (opa) at (13.6,2.7) {OPA (PDP)\\\texttt{:8181} (sin ingreso)};
 \node[caja] (neo) at (13.6,-3.1) {Neon PostgreSQL 17\\datos y bit\'acora};
 \node[caja] (sec) at (8.8,-3.1) {Secret Manager\\3 secretos};
 \node[caja] (reg) at (4.3,-3.1) {Artifact Registry\\im\'agenes \texttt{vX.Y.Z}};
@@ -92,8 +92,8 @@ Usa los mismos paquetes de TikZ que el documento de arquitectura de la Parte 1
 
 \draw[flecha] (cli) -- node[etq, above] {HTTPS (F1)} (gfe);
 \draw[flecha] (gfe) -- node[etq, above] {HTTP interno} (cad);
-\draw[flecha] (cad) -- node[etq, above] {loopback (F2)} (app);
-\draw[flecha] (app) -- node[etq, right] {loopback (F3)} (opa);
+\draw[flecha] (cad) -- node[etq, above] {red interna (F2)} (app);
+\draw[flecha] (app) -- node[etq, right] {red interna (F3)} (opa);
 \draw[flecha] (app) -- node[etq, right] {TLS, \texttt{sslmode=require} (F4)} (neo);
 \draw[flecha] (app) -- node[etq, above] {variables inyectadas (F5)} (sec);
 \draw[flecha] (reg) -- node[etq, left] {despliegue} ++(0,1.6);
@@ -112,11 +112,11 @@ las de la Parte 1; F6 no se implementó (ver secci\'on de desviaciones).}
                  ┌─────────────────────────────────────┐
  navegador       │     instancia de Cloud Run          │
      │  HTTPS    │                                     │
-     ▼           │  ┌───────┐ loopback ┌────────────┐  │  TLS   ┌──────────┐
+     ▼           │  ┌───────┐ interno  ┌────────────┐  │  TLS   ┌──────────┐
  front end ──────┼─►│ caddy │─────────►│ app  (PEP) │──┼───────►│   Neon   │
  de Google       │  │ :8080 │          │   :8000    │  │        │ Postgres │
  (TLS)           │  └───────┘          └──────┬─────┘  │        └──────────┘
-                 │                     loopback│       │
+                 │                     interno │       │
                  │                     ┌───────▼────┐  │        ┌──────────┐
                  │                     │ opa  (PDP) │  │◄───────│  Secret  │
                  │                     │   :8181    │  │ inyecta│ Manager  │
