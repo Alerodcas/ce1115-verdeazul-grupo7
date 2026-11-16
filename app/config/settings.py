@@ -72,7 +72,7 @@ INSTALLED_APPS = [
     # --- apps del proyecto ---
     "core",  # salud, base, plantillas comunes (Alejandra)
     "authz",  # PEP: cliente del motor de decisión OPA (Kevin)
-    # "auditoria",   # bitácora de 7 capas (Daniel) — agregar cuando exista
+    "auditoria",  # bitácora de auditoría (Daniel)
     "negocio",  # Finca, Período, Medición, Enmienda, Certificado, Cuenta (Daniel)
     # "certificados" # emisión y verificación firmada (Luis)
 ]
