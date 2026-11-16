@@ -15,7 +15,7 @@ from django.utils import timezone
 
 from auditoria.models import Bitacora
 
-from .models import Finca, Medicion, Periodo
+from .models import Cuenta, Enmienda, Finca, Medicion, Periodo
 
 VENTANA_MFA_MINUTOS = 5
 
@@ -96,3 +96,31 @@ def finca_o_none(pk) -> Finca | None:
 def periodo_o_none(pk) -> Periodo | None:
     pk = a_entero(pk)
     return Periodo.objects.filter(pk=pk).first() if pk is not None else None
+
+
+def medicion_o_none(pk) -> Medicion | None:
+    pk = a_entero(pk)
+    return Medicion.objects.select_related("finca", "periodo").filter(pk=pk).first() if pk is not None else None
+
+
+def atributos_enmienda(request, enmienda: Enmienda | None, medicion: Medicion | None) -> dict:
+    """Regla C4. `solicitante` permite a la política exigir que quien autoriza sea otra persona."""
+    usuario = request.user
+    base = atributos_medicion(request, medicion)
+    base.update(
+        estado_objeto=enmienda.estado if enmienda else Enmienda.Estado.SOLICITADA,
+        es_autor=enmienda is None or enmienda.solicitante_id == usuario.pk,
+        solicitante=str(enmienda.solicitante_id) if enmienda else str(usuario.pk),
+    )
+    return base
+
+
+def atributos_cuenta(request, cuenta: Cuenta | None) -> dict:
+    """Regla C6."""
+    usuario = request.user
+    return {
+        "estado_objeto": cuenta.estado if cuenta else Cuenta.Estado.SOLICITADA,
+        "es_autor": cuenta is None or cuenta.solicitante_id == usuario.pk,
+        "solicitante": str(cuenta.solicitante_id) if cuenta else str(usuario.pk),
+        "mfa_reciente": mfa_reciente(request),
+    }

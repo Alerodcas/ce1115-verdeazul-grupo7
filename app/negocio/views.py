@@ -8,13 +8,15 @@ Todas pasan por el PEP (`PermitePorMatriz`). Tres reglas que se repiten:
   respuesta es 503 (falla cerrada).
 * Toda denegación se registra antes de responder, sin tocar `authz/`.
 
-Lo que **no** está aquí todavía: Enmienda, Certificado (emisión: Luis) y Cuenta.
+Lo que **no** está aquí: la emisión de Certificado (Luis).
 """
 
 from __future__ import annotations
 
 import logging
 
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.db import transaction
 from django.http import Http404
 from rest_framework import status
@@ -26,8 +28,10 @@ from auditoria.servicio import registrar
 from authz.permissions import PermitePorMatriz
 
 from . import atributos as attrs
-from .models import Finca, Medicion, Periodo
+from .models import Cuenta, Enmienda, Finca, Medicion, Periodo
 from .serializers import (
+    CuentaSerializer,
+    EnmiendaSerializer,
     FincaActualizarSerializer,
     FincaSerializer,
     MedicionActualizarSerializer,
@@ -94,6 +98,23 @@ class VistaNegocio(APIView):
             objeto_tipo=self.objeto_tipo, decision=getattr(request, "decision_authz", None),
             **extra,
         )
+
+    @staticmethod
+    def bloquear(obj):
+        """Relee la fila con bloqueo: el estado se comprueba sobre lo que hay de verdad."""
+        return type(obj).objects.select_for_update().get(pk=obj.pk)
+
+    def denegar(self, request, obj, motivo: str) -> Response:
+        """Una regla de negocio (separación de funciones) que se trata como denegación."""
+        try:
+            registrar(
+                request, accion=self.accion, resultado="denegado", objeto=obj,
+                objeto_tipo=self.objeto_tipo, motivo=motivo,
+                decision=getattr(request, "decision_authz", None),
+            )
+        except ErrorBitacora:
+            logger.exception("No se pudo registrar una denegación; se deniega igual.")
+        return Response({"detail": motivo}, status=status.HTTP_403_FORBIDDEN)
 
     def handle_exception(self, exc):
         if isinstance(exc, ErrorBitacora):
@@ -285,10 +306,11 @@ class _MedicionTransicion(MedicionBase):
 
     def post(self, request, pk):
         medicion = self.obtener(request)
-        if medicion.estado not in self.desde:
-            return _conflicto(f"No se puede pasar de «{medicion.estado}» a «{self.hacia}».")
-        anterior = medicion.estado
         with transaction.atomic():
+            medicion = self.bloquear(medicion)
+            if medicion.estado not in self.desde:
+                return _conflicto(f"No se puede pasar de «{medicion.estado}» a «{self.hacia}».")
+            anterior = medicion.estado
             medicion.estado = self.hacia
             medicion.save(update_fields=["estado", "actualizada_en"])
             self.registrar_exito(request, medicion, detalle={"de": anterior, "a": self.hacia})
@@ -305,3 +327,205 @@ class MedicionAprobarView(_MedicionTransicion):
 
 class MedicionDevolverView(_MedicionTransicion):
     accion, desde, hacia = "Return", (Medicion.Estado.ENVIADA,), Medicion.Estado.DEVUELTA
+
+
+# ============================== Enmienda =====================================
+class EnmiendaBase(VistaNegocio):
+    objeto_tipo = "Enmienda"
+    modelo = Enmienda
+
+    def queryset_visible(self):
+        rol, u = self.request.session.get("rol_activo", ""), self.request.user
+        qs = Enmienda.objects.select_related("medicion__finca", "medicion__periodo")
+        if rol == "Tecnico de campo":
+            return qs.filter(medicion__finca__tecnicos=u)
+        if rol == "Dueno de finca":
+            return qs.filter(medicion__finca__propietario=u)
+        return qs
+
+    def construir_atributos(self, request, obj):
+        obj = obj or self.objeto_actual()
+        if obj is None and request.method == "POST" and "pk" not in self.kwargs:
+            return attrs.atributos_enmienda(
+                request, None, attrs.medicion_o_none(request.data.get("medicion"))
+            )
+        return attrs.atributos_enmienda(request, obj, obj.medicion if obj else None)
+
+
+class EnmiendaListaView(EnmiendaBase):
+    accion = "Read"
+
+    def get(self, request):
+        return Response(EnmiendaSerializer(self.queryset_visible().order_by("id"), many=True).data)
+
+
+class EnmiendaDetalleView(EnmiendaBase):
+    accion = "Read"
+
+    def get(self, request, pk):
+        return Response(EnmiendaSerializer(self.obtener(request)).data)
+
+
+class EnmiendaCrearView(EnmiendaBase):
+    """C4: el técnico pide corregir una medición ya aprobada. No la toca: solo pide."""
+
+    accion = "Create"
+
+    def post(self, request):
+        ser = EnmiendaSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        with transaction.atomic():
+            medicion = self.bloquear(ser.validated_data["medicion"])
+            if medicion.estado != Medicion.Estado.APROBADA:
+                return _conflicto("Solo se enmienda una medición aprobada.")
+            if medicion.enmiendas.filter(estado=Enmienda.Estado.SOLICITADA).exists():
+                return _conflicto("Ya hay una enmienda pendiente para esta medición.")
+            if hasattr(medicion, "reemplazada_por"):
+                return _conflicto("Esta medición ya fue reemplazada por una versión nueva.")
+            enmienda = ser.save(solicitante=request.user)
+            self.registrar_exito(request, enmienda)
+        return Response(EnmiendaSerializer(enmienda).data, status=status.HTTP_201_CREATED)
+
+
+class _EnmiendaResuelve(EnmiendaBase):
+    """Autorizar o rechazar. Quien solicitó no resuelve su propia enmienda."""
+
+    accion = "Authorize"
+
+    def post(self, request, pk):
+        enmienda = self.obtener(request)
+        if enmienda.solicitante_id == request.user.pk:
+            return self.denegar(request, enmienda, "Quien solicita una enmienda no la autoriza.")
+        with transaction.atomic():
+            enmienda = self.bloquear(enmienda)
+            if enmienda.estado != Enmienda.Estado.SOLICITADA:
+                return _conflicto(f"La enmienda ya está «{enmienda.estado}».")
+            return self.resolver(request, enmienda)
+
+    def resolver(self, request, enmienda):
+        raise NotImplementedError
+
+
+class EnmiendaAutorizarView(_EnmiendaResuelve):
+    def resolver(self, request, enmienda):
+        anterior = self.bloquear(enmienda.medicion)
+        if anterior.estado != Medicion.Estado.APROBADA or hasattr(anterior, "reemplazada_por"):
+            return _conflicto("La medición ya no admite enmienda.")
+        # Nunca se sobrescribe: se crea una versión nueva que apunta a la anterior.
+        # Queda «enviada» para que un verificador la apruebe de nuevo (C2).
+        nueva = Medicion.objects.create(
+            finca=anterior.finca, periodo=anterior.periodo, version=anterior.version + 1,
+            reemplaza=anterior, valor=enmienda.valor_propuesto, unidad=anterior.unidad,
+            estado=Medicion.Estado.ENVIADA, creada_por=enmienda.solicitante,
+        )
+        enmienda.autorizante = request.user
+        enmienda.estado = Enmienda.Estado.APLICADA
+        enmienda.medicion_nueva = nueva
+        enmienda.save()
+        self.registrar_exito(
+            request, enmienda,
+            detalle={"medicion_anterior": anterior.pk, "medicion_nueva": nueva.pk, "version": nueva.version},
+        )
+        return Response(EnmiendaSerializer(enmienda).data)
+
+
+class EnmiendaRechazarView(_EnmiendaResuelve):
+    def resolver(self, request, enmienda):
+        enmienda.autorizante = request.user
+        enmienda.estado = Enmienda.Estado.RECHAZADA
+        enmienda.save()
+        self.registrar_exito(request, enmienda, detalle={"decision": "rechazada"})
+        return Response(EnmiendaSerializer(enmienda).data)
+
+
+# ============================== Cuenta =======================================
+class CuentaBase(VistaNegocio):
+    """Gestión de cuentas (C6): solicitud escrita → aprobación → ejecución por otra persona."""
+
+    objeto_tipo = "Cuenta"
+    modelo = Cuenta
+
+    def construir_atributos(self, request, obj):
+        return attrs.atributos_cuenta(request, obj or self.objeto_actual())
+
+
+class CuentaListaView(CuentaBase):
+    accion = "Read"
+
+    def get(self, request):
+        return Response(CuentaSerializer(Cuenta.objects.order_by("id"), many=True).data)
+
+
+class CuentaDetalleView(CuentaBase):
+    accion = "Read"
+
+    def get(self, request, pk):
+        return Response(CuentaSerializer(self.obtener(request)).data)
+
+
+class CuentaCrearView(CuentaBase):
+    accion = "Create"
+
+    def post(self, request):
+        ser = CuentaSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        with transaction.atomic():
+            cuenta = ser.save(solicitante=request.user)
+            self.registrar_exito(request, cuenta, detalle={"tipo": cuenta.tipo})
+        return Response(CuentaSerializer(cuenta).data, status=status.HTTP_201_CREATED)
+
+
+class CuentaAprobarView(CuentaBase):
+    accion = "Approve"
+
+    def post(self, request, pk):
+        cuenta = self.obtener(request)
+        if cuenta.usuario_id == request.user.pk:
+            return self.denegar(request, cuenta, "Nadie aprueba cambios sobre su propia cuenta.")
+        with transaction.atomic():
+            cuenta = self.bloquear(cuenta)
+            if cuenta.estado != Cuenta.Estado.SOLICITADA:
+                return _conflicto(f"La solicitud ya está «{cuenta.estado}».")
+            cuenta.aprobador = request.user
+            cuenta.estado = Cuenta.Estado.AUTORIZADA
+            cuenta.save()
+            self.registrar_exito(request, cuenta, detalle={"tipo": cuenta.tipo})
+        return Response(CuentaSerializer(cuenta).data)
+
+
+class CuentaEjecutarView(CuentaBase):
+    """Aplica el cambio. Update si asigna un rol, Deactivate si da de baja."""
+
+    def initial(self, request, *args, **kwargs):
+        cuenta = Cuenta.objects.filter(pk=kwargs.get("pk")).first()
+        desactiva = cuenta is not None and cuenta.tipo == Cuenta.Tipo.DESACTIVAR
+        self.accion = "Deactivate" if desactiva else "Update"
+        super().initial(request, *args, **kwargs)
+
+    def post(self, request, pk):
+        cuenta = self.obtener(request)
+        if request.user.pk in (cuenta.aprobador_id, cuenta.usuario_id):
+            return self.denegar(
+                request, cuenta,
+                "Quien ejecuta debe ser distinto del aprobador y de la persona afectada.",
+            )
+        with transaction.atomic():
+            cuenta = self.bloquear(cuenta)
+            if cuenta.estado != Cuenta.Estado.AUTORIZADA:
+                return _conflicto("Solo se ejecuta una solicitud autorizada.")
+            afectado = get_user_model().objects.select_for_update().get(pk=cuenta.usuario_id)
+            if cuenta.tipo == Cuenta.Tipo.DESACTIVAR:
+                afectado.is_active = False
+                afectado.save(update_fields=["is_active"])
+            else:
+                grupo = Group.objects.filter(name=cuenta.rol_solicitado).first()
+                if grupo is None:
+                    return _conflicto("El rol pedido no existe en el sistema.")
+                afectado.groups.add(grupo)
+            cuenta.ejecutor = request.user
+            cuenta.estado = Cuenta.Estado.EJECUTADA
+            cuenta.save()
+            self.registrar_exito(
+                request, cuenta, detalle={"tipo": cuenta.tipo, "rol": cuenta.rol_solicitado},
+            )
+        return Response(CuentaSerializer(cuenta).data)

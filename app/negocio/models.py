@@ -21,6 +21,16 @@ from django.db.models import F, Q
 
 Usuario = settings.AUTH_USER_MODEL
 
+# Los seis roles de la matriz, con la ortografía exacta que espera la política.
+ROLES = (
+    "Tecnico de campo",
+    "Verificador",
+    "Administrador",
+    "Auditor externo",
+    "Dueno de finca",
+    "Gerencia de Certificacion",
+)
+
 
 class ProtectedOperation(Exception):
     """Se intentó borrar un objeto que, por diseño, no se borra."""
@@ -191,8 +201,13 @@ class Cuenta(SinBorrado):
         EJECUTADA = "ejecutada"
         REVOCADA = "revocada"
 
+    class Tipo(models.TextChoices):
+        ASIGNAR_ROL = "asignar_rol"
+        DESACTIVAR = "desactivar"
+
+    tipo = models.CharField(max_length=12, choices=Tipo.choices, default=Tipo.ASIGNAR_ROL)
     usuario = models.ForeignKey(Usuario, on_delete=models.PROTECT, related_name="cuentas_gestionadas")
-    rol_solicitado = models.CharField(max_length=40)
+    rol_solicitado = models.CharField(max_length=40, blank=True)
     solicitud = models.TextField()  # la solicitud escrita
     solicitante = models.ForeignKey(
         Usuario, on_delete=models.PROTECT, related_name="cuentas_solicitadas"
