@@ -15,7 +15,8 @@ avisa al grupo, porque hay código de tres personas colgando de estos nombres.
 | `app/config/settings.py` | Alejandra | hecho — los demás agregan su app a `INSTALLED_APPS`, sin tocar el bloque de seguridad |
 | `opa/policies/*.rego`, `app/authz/` | Kevin | andamio puesto, reglas pendientes |
 | `app/certificados/` | Luis | pendiente |
-| `app/negocio/`, `app/auditoria/` | Daniel | pendiente |
+| `app/negocio/` | Daniel | hecho (modelos y migración) |
+| `app/auditoria/` | Daniel | hecho: API `registrar`, cadena de hashes, solo inserción. Falta engancharla en `authz` y en las vistas |
 | Secret Manager, Dependabot | Eder | secretos creados, falta cargarlos y activar Dependabot |
 
 Regla práctica: **una rama por frente** (`feat/authz`, `feat/certificados`,
