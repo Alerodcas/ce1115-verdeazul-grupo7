@@ -62,8 +62,10 @@ spec:
             - name: http1
               containerPort: 8080
           env:
-            - name: PORT
-              value: "8080"
+            # OJO: no se declara PORT. Cloud Run lo reserva y lo inyecta solo,
+            # con el valor de containerPort, en el contenedor de ingreso. Si se
+            # declara, el despliegue se rechaza con "reserved env names".
+            # El Caddyfile lo lee con {$PORT:8080}, asi que funciona igual.
             - name: APP_PORT
               value: "8000"
           resources:
