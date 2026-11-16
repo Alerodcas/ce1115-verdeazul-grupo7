@@ -139,7 +139,20 @@ corriendo?* y *¿a cuál volvemos?*
 
 | Versión | Commit | Fecha | Qué cambió |
 |---|---|---|---|
-| _(pendiente)_ | | | |
+| `v1.0.0` | `bec4499` | 2026-11-13 | Primer despliegue: los tres contenedores, secretos en Secret Manager y base en Neon (us-east-2). |
+
+Digests de las imágenes de `v1.0.0`, tal como quedaron en Artifact Registry
+(`us-central1-docker.pkg.dev/<proyecto>/verdeazul`):
+
+| Imagen | Digest |
+|---|---|
+| `app` | `sha256:34c3dbace9c35fe7e0293bb21a97bc11593fc0ca71537dd4d01bb1116f8bbff0` |
+| `caddy` | `sha256:ef77fc7b72b4b576b41d8a209d0e140de98098affda4cbc9e5dee582a08075be` |
+| `opa` | `sha256:4a092e2ddd47061cadcc66b008dd5571a15085af217cebe5871195239a845ae7` |
+
+El digest es lo que identifica el contenido exacto de la imagen. La etiqueta
+`v1.0.0` se podría mover; el digest no. Las dos cosas juntas son las que
+permiten responder *qué está corriendo* y *a cuál volvemos*.
 
 > Mantener esta tabla al día: el enunciado pide que el README traiga las
 > etiquetas de versión publicadas (Entregable 2).
