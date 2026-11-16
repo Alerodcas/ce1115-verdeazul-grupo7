@@ -13,14 +13,34 @@ from django.test import SimpleTestCase, TestCase, override_settings
 
 
 class SondasTest(TestCase):
-    def test_healthz_responde_sin_tocar_la_base(self):
-        respuesta = self.client.get("/healthz")
+    def test_health_responde_sin_tocar_la_base(self):
+        respuesta = self.client.get("/health")
         self.assertEqual(respuesta.status_code, 200)
         self.assertEqual(respuesta.json()["status"], "ok")
 
-    def test_readyz_comprueba_la_base(self):
-        respuesta = self.client.get("/readyz")
+    def test_ready_comprueba_la_base(self):
+        respuesta = self.client.get("/ready")
         self.assertEqual(respuesta.status_code, 200)
+
+    def test_las_rutas_publicas_no_terminan_en_z(self):
+        """Cloud Run intercepta algunas rutas terminadas en «z».
+
+        Si alguien agrega una ruta pública con ese nombre, el front end de
+        Google la responde con su propio 404 y nunca llega al contenedor.
+        """
+        from core.urls import urlpatterns
+
+        publicas = {"health", "ready", "index"}
+        for patron in urlpatterns:
+            if patron.name in publicas:
+                self.assertFalse(
+                    str(patron.pattern).endswith("z"),
+                    f"la ruta pública {patron.name} termina en z",
+                )
+
+    def test_los_alias_viejos_siguen_sirviendo_en_local(self):
+        for ruta in ("/healthz", "/readyz"):
+            self.assertEqual(self.client.get(ruta).status_code, 200)
 
     def test_portada_responde(self):
         self.assertEqual(self.client.get("/").status_code, 200)

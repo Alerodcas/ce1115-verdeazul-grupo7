@@ -101,9 +101,9 @@ spec:
             - name: DJANGO_DEBUG
               value: "False"
             - name: DJANGO_ALLOWED_HOSTS
-              value: "${PUBLIC_HOST}"
+              value: "${ALLOWED_HOSTS_VALUE}"
             - name: DJANGO_CSRF_TRUSTED_ORIGINS
-              value: "https://${PUBLIC_HOST}"
+              value: "${CSRF_ORIGINS_VALUE}"
             - name: OPA_URL
               value: "http://127.0.0.1:8181"
             # --- secretos: solo referencias, nunca valores -------------------

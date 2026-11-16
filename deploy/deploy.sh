@@ -38,20 +38,30 @@ if [[ -z "${PUBLIC_HOST:-}" ]]; then
     export PUBLIC_HOST=".run.app"
 fi
 
+# Cloud Run asigna DOS URLs al mismo servicio (una con el numero de proyecto y
+# otra con un hash). Las dos sirven, y el profesor puede abrir cualquiera. Por
+# eso PUBLIC_HOST admite varios dominios separados por coma: asi ALLOWED_HOSTS
+# queda con los dominios exactos en vez de un comodin.
+export ALLOWED_HOSTS_VALUE="${PUBLIC_HOST}"
+export CSRF_ORIGINS_VALUE="$(printf '%s' "${PUBLIC_HOST}" \
+    | tr ',' '\n' | sed '/^$/d; s|^|https://|' | paste -sd, -)"
+echo "ALLOWED_HOSTS: ${ALLOWED_HOSTS_VALUE}"
+echo "CSRF origins:  ${CSRF_ORIGINS_VALUE}"
+
 PLANTILLA=./deploy/service.yaml
 GENERADO="$(mktemp -t verdeazul-service-XXXXXX.yaml)"
 trap 'rm -f "${GENERADO}"' EXIT
 
 # Sustitucion de variables. Se prefiere envsubst, pero no existe en todos los
 # entornos (Git Bash en Windows, por ejemplo), asi que hay respaldo en Python.
-VARIABLES='${SERVICE_NAME} ${REGION} ${REVISION_SUFFIX} ${RUNTIME_SA} ${REGISTRY} ${IMAGE_TAG} ${PUBLIC_HOST}'
+VARIABLES='${SERVICE_NAME} ${REGION} ${REVISION_SUFFIX} ${RUNTIME_SA} ${REGISTRY} ${IMAGE_TAG} ${PUBLIC_HOST} ${ALLOWED_HOSTS_VALUE} ${CSRF_ORIGINS_VALUE}'
 if command -v envsubst >/dev/null 2>&1; then
     envsubst "${VARIABLES}" < "${PLANTILLA}" > "${GENERADO}"
 else
     echo "envsubst no esta disponible; se usa Python para sustituir las variables."
     python3 -c '
 import os, re, sys
-nombres = ["SERVICE_NAME","REGION","REVISION_SUFFIX","RUNTIME_SA","REGISTRY","IMAGE_TAG","PUBLIC_HOST"]
+nombres = ["SERVICE_NAME","REGION","REVISION_SUFFIX","RUNTIME_SA","REGISTRY","IMAGE_TAG","PUBLIC_HOST","ALLOWED_HOSTS_VALUE","CSRF_ORIGINS_VALUE"]
 faltan = [n for n in nombres if os.environ.get(n) is None]
 if faltan:
     sys.exit("faltan variables de entorno: " + ", ".join(faltan))
@@ -65,9 +75,9 @@ fi
 # mejor parar aqui que desplegar una imagen con la etiqueta literal '${IMAGE_TAG}'.
 # Se buscan los nombres exactos, no cualquier '${', porque los comentarios del
 # propio YAML mencionan la sintaxis.
-if grep -qE '\$\{(SERVICE_NAME|REGION|REVISION_SUFFIX|RUNTIME_SA|REGISTRY|IMAGE_TAG|PUBLIC_HOST)\}' "${GENERADO}"; then
+if grep -qE '\$\{(SERVICE_NAME|REGION|REVISION_SUFFIX|RUNTIME_SA|REGISTRY|IMAGE_TAG|PUBLIC_HOST|ALLOWED_HOSTS_VALUE|CSRF_ORIGINS_VALUE)\}' "${GENERADO}"; then
     echo "ERROR: quedaron variables sin sustituir en el manifiesto:" >&2
-    grep -nE '\$\{(SERVICE_NAME|REGION|REVISION_SUFFIX|RUNTIME_SA|REGISTRY|IMAGE_TAG|PUBLIC_HOST)\}' "${GENERADO}" >&2
+    grep -nE '\$\{(SERVICE_NAME|REGION|REVISION_SUFFIX|RUNTIME_SA|REGISTRY|IMAGE_TAG|PUBLIC_HOST|ALLOWED_HOSTS_VALUE|CSRF_ORIGINS_VALUE)\}' "${GENERADO}" >&2
     exit 1
 fi
 
