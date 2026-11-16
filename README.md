@@ -211,6 +211,6 @@ Dependabot vigila Python, las imágenes base y las propias acciones de GitHub
 | Kevin Chinchilla Rodríguez | Motor de autorización (RBAC2 + ABAC) | `opa/policies/`, `app/authz/` |
 | Eder Vega Suazo | Gestión de secretos y seguridad heredada | Secret Manager, Dependabot, secciones 5.1.3 y 5.1.4 |
 | Luis Alexis Alvarado Barrantes | Certificación digital y políticas de cuentas | app `certificados` (pendiente), sección 5.1.5 |
-| Daniel Cob Beirute | Auditoría, trazabilidad y datos | apps `negocio` y `auditoria` (pendientes), consolidación del informe |
+| Daniel Cob Beirute | Auditoría, trazabilidad y datos | apps `negocio` y `auditoria`, consolidación del informe |
 
 La defensa es individual: cada quien responde por el sistema completo.
