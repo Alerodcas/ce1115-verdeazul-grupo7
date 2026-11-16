@@ -10,7 +10,9 @@
 #    · límite de tasa por dirección de origen
 #    · métodos permitidos
 #    · cabeceras de seguridad de la respuesta
-#    · oculta la cabecera Server
+#    · quita la cabecera Server de Caddy (OJO: el front end de Google pone la
+#      suya despues, `Server: Google Frontend`, y eso no se puede evitar desde
+#      aqui. No revela la pila: no dice Caddy ni Django)
 #
 #  Qué YA NO hace, y es una desviación documentada respecto a la Parte 1:
 #    la terminación de TLS y la renovación ACME. En Cloud Run eso lo hace el

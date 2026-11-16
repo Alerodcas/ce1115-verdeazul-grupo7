@@ -6,8 +6,14 @@ Implementación y despliegue del sistema diseñado en la Parte 1: control de acc
 híbrido RBAC2 + ABAC, bitácora de auditoría y emisión de certificados de carbono
 firmados digitalmente.
 
-- **URL pública:** _(se completa tras el primer despliegue)_
-- **Versión desplegada:** _(se completa tras el primer despliegue)_
+- **URL pública:** <https://verdeazul-2wkb3ke6wq-uc.a.run.app>
+  (Cloud Run asigna una segunda URL al mismo servicio, también válida:
+  <https://verdeazul-748556475165.us-central1.run.app>)
+- **Versión desplegada:** `v1.1.0`
+- **Comprobación rápida:** `curl -s https://verdeazul-2wkb3ke6wq-uc.a.run.app/ready`
+  responde `{"status": "ok", "version": "v1.1.0"}` — esa ruta es la única que
+  consulta la base de datos, así que un `ok` confirma los tres contenedores
+  más Neon.
 
 ---
 
@@ -139,7 +145,8 @@ corriendo?* y *¿a cuál volvemos?*
 
 | Versión | Commit | Fecha | Qué cambió |
 |---|---|---|---|
-| `v1.0.0` | `bec4499` | 2026-11-13 | Primer despliegue: los tres contenedores, secretos en Secret Manager y base en Neon (us-east-2). |
+| `v1.1.0` | _(pendiente)_ | 2026-11-15 | **Desplegada.** Agrega las apps `negocio` y `auditoria` (modelos de las 7 entidades y bitácora de solo inserción). `app` y `opa` escuchan en todas las interfaces de la instancia (D-05). |
+| `v1.0.0` | `bec4499` | 2026-11-13 | Construida y publicada, nunca desplegada: la revisión fue rechazada por declarar la variable reservada `PORT` y por las sondas contra loopback. |
 
 Digests de las imágenes de `v1.0.0`, tal como quedaron en Artifact Registry
 (`us-central1-docker.pkg.dev/<proyecto>/verdeazul`):
