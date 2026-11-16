@@ -45,3 +45,4 @@ bandit-report.json
 .DS_Store
 Thumbs.db
 temp/
+.neon

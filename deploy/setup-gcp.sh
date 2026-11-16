@@ -111,7 +111,25 @@ gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
 gcloud iam service-accounts add-iam-policy-binding "${RUNTIME_SA}" \
     --member="serviceAccount:${DEPLOY_SA}" \
     --role="roles/iam.serviceAccountUser" >/dev/null
-echo "    ${DEPLOY_SA}: publicar imágenes y desplegar, SIN acceso a secretos"
+
+# Cloud Build corre con una identidad propia. En los proyectos creados a partir
+# de 2024, Google ya NO le concede permisos automáticamente a la cuenta por
+# omisión de Compute Engine, así que una construcción falla con
+# "does not have storage.objects.get access".
+#
+# En vez de devolverle permisos a esa cuenta compartida, se usa DEPLOY_SA como
+# identidad de construcción (ver deploy/build-push.sh). Necesita:
+#   · cloudbuild.builds.builder : ejecutar la construcción y escribir registros
+#   · storage.admin            : leer el código subido y crear el bucket
+#                                regional de registros
+# Sigue SIN acceso a los secretos: eso es lo que separa el plano de
+# construcción del plano de ejecución.
+for rol in roles/cloudbuild.builds.builder roles/storage.admin; do
+    gcloud projects add-iam-policy-binding "${PROJECT_ID}" \
+        --member="serviceAccount:${DEPLOY_SA}" \
+        --role="${rol}" >/dev/null
+done
+echo "    ${DEPLOY_SA}: publicar imágenes, construir y desplegar, SIN acceso a secretos"
 
 # -----------------------------------------------------------------------------
 say "6/6 Listo"
