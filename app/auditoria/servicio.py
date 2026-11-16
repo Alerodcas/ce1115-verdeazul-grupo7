@@ -16,8 +16,8 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import timezone as dt_timezone
 from dataclasses import dataclass
+from datetime import UTC
 
 from django.db import connection, transaction
 from django.utils import timezone
@@ -34,7 +34,7 @@ def _canonico(campos: dict) -> bytes:
 
 def _campos_firmados(e: Bitacora) -> dict:
     return {
-        "ocurrido_en": e.ocurrido_en.astimezone(dt_timezone.utc).isoformat(),
+        "ocurrido_en": e.ocurrido_en.astimezone(UTC).isoformat(),
         "actor": e.actor,
         "rol_activo": e.rol_activo,
         "accion": e.accion,

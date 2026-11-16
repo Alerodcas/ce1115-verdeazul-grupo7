@@ -7,7 +7,13 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 
 from .models import (
-    Certificado, Cuenta, Enmienda, Finca, Medicion, Periodo, ProtectedOperation,
+    Certificado,
+    Cuenta,
+    Enmienda,
+    Finca,
+    Medicion,
+    Periodo,
+    ProtectedOperation,
 )
 
 

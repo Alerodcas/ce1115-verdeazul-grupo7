@@ -111,6 +111,9 @@ class Medicion(SinBorrado):
         ]
 
 
+    def __str__(self):
+        return f"Medicion {self.finca_id}/{self.periodo_id} v{self.version}"
+
 class Enmienda(SinBorrado):
     class Estado(models.TextChoices):
         SOLICITADA = "solicitada"
@@ -143,6 +146,9 @@ class Enmienda(SinBorrado):
         ]
 
 
+    def __str__(self):
+        return f"Enmienda de medicion {self.medicion_id} ({self.estado})"
+
 class Certificado(SinBorrado):
     class Estado(models.TextChoices):
         VIGENTE = "vigente"
@@ -172,6 +178,9 @@ class Certificado(SinBorrado):
             )
         ]
 
+
+    def __str__(self):
+        return f"Certificado {self.finca_id}/{self.periodo_id} ({self.estado})"
 
 class Cuenta(SinBorrado):
     """Gestión de una cuenta de usuario: solicitud escrita y doble control (C6)."""
@@ -206,3 +215,7 @@ class Cuenta(SinBorrado):
                 name="cuenta_ejecutor_distinto_de_aprobador",
             )
         ]
+
+
+    def __str__(self):
+        return f"{self.rol_solicitado} para {self.usuario_id} ({self.estado})"
