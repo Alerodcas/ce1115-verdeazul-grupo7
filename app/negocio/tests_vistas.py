@@ -153,7 +153,7 @@ class MedicionTest(BaseVistas):
         self.assertEqual(c.patch(f"/api/mediciones/{m.pk}/", {"valor": "1"}, format="json").status_code, 409)
 
     def test_editar_registra_al_editor(self):
-        m = self.medicion(creada_por=self.otro)
+        m = self.medicion()  # el técnico solo edita las suyas
         c = self.cliente(self.tec)
         c.patch(f"/api/mediciones/{m.pk}/", {"valor": "9", "finca": self.ajena.pk}, format="json")
         m.refresh_from_db()

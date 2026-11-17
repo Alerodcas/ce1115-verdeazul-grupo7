@@ -142,7 +142,10 @@ class FincaBase(VistaNegocio):
         return qs
 
     def construir_atributos(self, request, obj):
-        return attrs.atributos_finca(request, obj or self.objeto_actual())
+        obj = obj or self.objeto_actual()
+        if obj is None and "pk" not in self.kwargs and request.method == "GET":
+            return attrs.atributos_lista(request)
+        return attrs.atributos_finca(request, obj)
 
 
 class FincaListaView(FincaBase):
@@ -201,7 +204,10 @@ class PeriodoBase(VistaNegocio):
     modelo = Periodo
 
     def construir_atributos(self, request, obj):
-        return attrs.atributos_periodo(request, obj or self.objeto_actual())
+        obj = obj or self.objeto_actual()
+        if obj is None and "pk" not in self.kwargs and request.method == "GET":
+            return attrs.atributos_lista(request)
+        return attrs.atributos_periodo(request, obj)
 
 
 class PeriodoListaView(PeriodoBase):
@@ -241,14 +247,16 @@ class MedicionBase(VistaNegocio):
     def queryset_visible(self):
         rol, u = self.request.session.get("rol_activo", ""), self.request.user
         qs = Medicion.objects.select_related("finca", "periodo")
-        if rol == "Tecnico de campo":
-            return qs.filter(finca__tecnicos=u)
+        if rol == "Tecnico de campo":  # S1 y «propias» (C1)
+            return qs.filter(finca__tecnicos=u, creada_por=u)
         if rol == "Dueno de finca":
             return qs.filter(finca__propietario=u)
         return qs
 
     def construir_atributos(self, request, obj):
         obj = obj or self.objeto_actual()
+        if obj is None and "pk" not in self.kwargs and request.method == "GET":
+            return attrs.atributos_lista(request)
         if obj is None and request.method == "POST" and "pk" not in self.kwargs:
             # Por crear: del cuerpo solo se toman los identificadores; los hechos
             # (asignación, período abierto) se consultan.
@@ -337,14 +345,16 @@ class EnmiendaBase(VistaNegocio):
     def queryset_visible(self):
         rol, u = self.request.session.get("rol_activo", ""), self.request.user
         qs = Enmienda.objects.select_related("medicion__finca", "medicion__periodo")
-        if rol == "Tecnico de campo":
-            return qs.filter(medicion__finca__tecnicos=u)
+        if rol == "Tecnico de campo":  # solo las que él solicitó (C4)
+            return qs.filter(medicion__finca__tecnicos=u, solicitante=u)
         if rol == "Dueno de finca":
             return qs.filter(medicion__finca__propietario=u)
         return qs
 
     def construir_atributos(self, request, obj):
         obj = obj or self.objeto_actual()
+        if obj is None and "pk" not in self.kwargs and request.method == "GET":
+            return attrs.atributos_lista(request)
         if obj is None and request.method == "POST" and "pk" not in self.kwargs:
             return attrs.atributos_enmienda(
                 request, None, attrs.medicion_o_none(request.data.get("medicion"))
