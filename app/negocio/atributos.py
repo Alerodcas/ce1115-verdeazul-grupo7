@@ -103,24 +103,67 @@ def medicion_o_none(pk) -> Medicion | None:
     return Medicion.objects.select_related("finca", "periodo").filter(pk=pk).first() if pk is not None else None
 
 
+def _texto(request, campo: str) -> str:
+    """Un campo de texto del cuerpo, o vacío si no hay o no es texto."""
+    datos = request.data
+    valor = datos.get(campo, "") if hasattr(datos, "get") else ""
+    return valor.strip() if isinstance(valor, str) else ""
+
+
 def atributos_enmienda(request, enmienda: Enmienda | None, medicion: Medicion | None) -> dict:
-    """Regla C4. `solicitante` permite a la política exigir que quien autoriza sea otra persona."""
+    """Regla C4. `solicitante` permite a la política exigir que quien autoriza sea otra persona.
+
+    `tiene_motivo` es lo único que no sale de una fila existente: al crear, es una
+    propiedad de lo que se está enviando (si trae motivo escrito), no un hecho que
+    el cliente pueda inventar sobre otro objeto.
+    """
     usuario = request.user
     base = atributos_medicion(request, medicion)
     base.update(
         estado_objeto=enmienda.estado if enmienda else Enmienda.Estado.SOLICITADA,
         es_autor=enmienda is None or enmienda.solicitante_id == usuario.pk,
         solicitante=str(enmienda.solicitante_id) if enmienda else str(usuario.pk),
+        tiene_motivo=bool(enmienda.motivo.strip()) if enmienda else bool(_texto(request, "motivo")),
     )
     return base
 
 
 def atributos_cuenta(request, cuenta: Cuenta | None) -> dict:
-    """Regla C6."""
+    """Regla C6: solicitud escrita, `beneficiario` (a quién afecta) y `ejecutor`."""
     usuario = request.user
+    if cuenta is not None:
+        beneficiario = str(cuenta.usuario_id)
+        tiene_solicitud = bool(cuenta.solicitud.strip())
+    else:  # por crear: el identificador viene del cuerpo; la política lo compara con el actor
+        beneficiario = str(a_entero(getattr(request.data, "get", lambda *_: None)("usuario")) or "")
+        tiene_solicitud = bool(_texto(request, "solicitud"))
     return {
         "estado_objeto": cuenta.estado if cuenta else Cuenta.Estado.SOLICITADA,
         "es_autor": cuenta is None or cuenta.solicitante_id == usuario.pk,
         "solicitante": str(cuenta.solicitante_id) if cuenta else str(usuario.pk),
+        "beneficiario": beneficiario,
+        "ejecutor": str(cuenta.ejecutor_id) if cuenta and cuenta.ejecutor_id else "",
+        "tiene_solicitud": tiene_solicitud,
+        "mfa_reciente": mfa_reciente(request),
+    }
+
+
+def atributos_lista(request) -> dict:
+    """Para una consulta de colección (sin un objeto concreto).
+
+    La política pide `finca_asignada`, `es_propietario` o `es_autor` verdaderos para
+    leer. En una lista no hay una finca en particular: se pregunta si la persona
+    tiene alguna, y la propia consulta ya se limita a lo suyo (ver `queryset_visible`).
+    """
+    usuario = request.user
+    return {
+        "finca_asignada": usuario.fincas_asignadas.exists(),
+        "es_propietario": usuario.fincas_propias.exists(),
+        "es_autor": True,
+        "fue_editor": False,
+        "periodo_abierto": False,
+        "estado_objeto": "",
+        "solicitante": "",
+        "fincas_leidas_24h": fincas_leidas_24h(usuario),
         "mfa_reciente": mfa_reciente(request),
     }
