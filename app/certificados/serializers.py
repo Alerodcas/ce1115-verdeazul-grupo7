@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 from .models import PeriodoMedida, Certificado
 from .crypto import verify_sign
 
@@ -31,6 +32,22 @@ class PeriodoMedidaSerializer(serializers.ModelSerializer):
         if value not in ['ABIERTO', 'CERRADO']:
             raise serializers.ValidationError("El estado debe ser 'ABIERTO' o 'CERRADO'.")
         return value
+
+    def update(self, instance, validated_data):
+        new_status = validated_data.get('status', instance.status)
+
+        #Marcar el momento del cierre del periodo en utc
+        if new_status == 'CERRADO' and instance.status != 'CERRADO':
+            instance.end_date = timezone.now()
+        elif new_status == 'ABIERTO':
+            instance.end_date = None
+
+        instance.status = new_status
+        instance.name = validated_data.get('name', instance.name)
+        instance.year = validated_data.get('year', instance.year)
+        instance.modified_by = self.context['request'].user
+        instance.save()
+        return instance
 
 
 class CertificadoEmisionSerializer(serializers.ModelSerializer):

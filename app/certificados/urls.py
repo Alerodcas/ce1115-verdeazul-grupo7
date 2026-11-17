@@ -18,8 +18,8 @@ router.register(r'cuentas', GestionCuentaUsuarioViewSet, basename='cuenta')
 
 urlpatterns = [
     # Endpoints específicos para Certificación y Verificación
-    path('certificados/emitir/', CertificadoEmisionView.as_view(), name='certificado-emitir'),
-    path('certificados/verificar/', CertificadoVerificacionView.as_view(), name='certificado-verificar'),
+    path('emitir/', CertificadoEmisionView.as_view(), name='certificado-emitir'),
+    path('verificar/', CertificadoVerificacionView.as_view(), name='certificado-verificar'),
     
     # Rutas CRUD del router (periodos/, certificados/, cuentas/)
     path('', include(router.urls)),

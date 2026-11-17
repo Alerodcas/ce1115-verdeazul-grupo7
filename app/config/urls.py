@@ -11,6 +11,6 @@ urlpatterns = [
     path("", include("core.urls")),
     path("admin/", admin.site.urls),
     # path("api/", include("negocio.urls")),        # Daniel
-    # path("certificados/", include("certificados.urls")),  # Luis
+    path("certificados/", include("certificados.urls")),  # Luis
     # path("bitacora/", include("auditoria.urls")),         # Daniel
 ]

@@ -36,6 +36,13 @@ class PeriodoMedidaViewSet(viewsets.ModelViewSet):
         end_date = timezone.now() if new_status == 'CERRADO' else None
         serializer.save(modified_by=self.request.user, end_date=end_date)
 
+class EsGerenciaCertificacion(permissions.BasePermission):
+    def has_permission(self, request, view):
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return request.user.groups.filter(name='Gerencia de Certificación').exists() or request.user.is_staff
 
 class CertificadoViewSet(viewsets.ReadOnlyModelViewSet):
     """
