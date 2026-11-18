@@ -72,9 +72,9 @@ INSTALLED_APPS = [
     # --- apps del proyecto ---
     "core",  # salud, base, plantillas comunes (Alejandra)
     "authz",  # PEP: cliente del motor de decisión OPA (Kevin)
+    "certificados", # emisión y verificación firmada (Luis)
     "auditoria",  # bitácora de auditoría (Daniel)
     "negocio",  # Finca, Período, Medición, Enmienda, Certificado, Cuenta (Daniel)
-    # "certificados" # emisión y verificación firmada (Luis)
 ]
 
 MIDDLEWARE = [
