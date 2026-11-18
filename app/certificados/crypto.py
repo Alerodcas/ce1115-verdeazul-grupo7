@@ -1,9 +1,11 @@
-import base64 
-import json 
-from cryptography.hazmat.primitives import hashes, serialization 
-from cryptography.hazmat.primitives.asymmetric import padding, rsa 
+import base64
+import json
 import os
+
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from django.conf import settings
+
 
 def generate_key_pair()-> tuple[str, str]:
     """ Genera un par de claves criptográficas RSA de 2048 bits. Returns: tuple[str, str]: (private_key_pem, public_key_pem) en formato PEM (UTF-8). """

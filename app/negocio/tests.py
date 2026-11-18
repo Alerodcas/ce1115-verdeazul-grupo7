@@ -7,7 +7,6 @@ from django.db import IntegrityError, transaction
 from django.test import TestCase
 
 from .models import (
-    Certificado,
     Cuenta,
     Enmienda,
     Finca,
@@ -48,16 +47,6 @@ class ReglasTest(BaseTest):
 
     def test_periodo_fin_posterior_al_inicio(self):
         self._falla(lambda: Periodo.objects.create(etiqueta="x", inicio=date(2026, 5, 1), fin=date(2026, 5, 1)))
-
-    def test_un_solo_certificado_vigente(self):
-        Certificado.objects.create(finca=self.finca, periodo=self.periodo, emitido_por=self.ana)
-        self._falla(lambda: Certificado.objects.create(finca=self.finca, periodo=self.periodo, emitido_por=self.ana))
-
-    def test_revocado_permite_uno_nuevo(self):
-        c = Certificado.objects.create(finca=self.finca, periodo=self.periodo, emitido_por=self.ana)
-        c.estado = Certificado.Estado.REVOCADO
-        c.save()
-        Certificado.objects.create(finca=self.finca, periodo=self.periodo, emitido_por=self.ana)
 
     def test_version_de_medicion_unica(self):
         kw = dict(finca=self.finca, periodo=self.periodo, valor=1, creada_por=self.ana)

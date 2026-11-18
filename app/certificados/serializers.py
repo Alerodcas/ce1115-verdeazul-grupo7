@@ -1,8 +1,9 @@
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from .models import PeriodoMedida, Certificado
+from rest_framework import serializers
+
 from .crypto import verify_sign
+from .models import Certificado, PeriodoMedida
 
 User = get_user_model()
 
