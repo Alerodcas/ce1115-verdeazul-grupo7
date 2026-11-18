@@ -4,7 +4,26 @@ from django.conf import settings
 from django.db import models
 
 
-class PeriodoMedida(models.Model):
+class ProtectedOperation(Exception):
+    """Se intentó borrar un objeto que, por diseño, no se borra."""
+
+class _SinBorradoQuerySet(models.QuerySet):
+    def delete(self):
+        raise ProtectedOperation("Los objetos de negocio no se borran.")
+
+
+class SinBorrado(models.Model):
+    objects = _SinBorradoQuerySet.as_manager()
+
+    class Meta:
+        abstract = True
+
+    def delete(self, *args, **kwargs):
+        raise ProtectedOperation(
+            f"{type(self).__name__} no se borra: se desactiva o cambia de estado."
+        )
+
+class PeriodoMedida(SinBorrado):
     """ Representa el período de medición de biomasa (ej. 2026-I). 
     La Gerencia de Certificación gestiona su estado 
     ('ABIERTO' / 'CERRADO') [1, 3]. """
@@ -33,7 +52,7 @@ class PeriodoMedida(models.Model):
     def __str__(self):
         return f"{self.name} [{self.status}]"
 
-class Certificado(models.Model):
+class Certificado(SinBorrado):
 
     STATUS_CHOICES = [('VIGENTE', 'Vigente'), ('REVOCADO', 'Revocado')]
 
