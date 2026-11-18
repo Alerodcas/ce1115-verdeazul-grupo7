@@ -1,8 +1,9 @@
-import django
-import uuid
 import os
-from certificados.crypto import generate_key_pair, sign_data, verify_sign
+import uuid
+import django
+
 from django.contrib.auth import get_user_model
+from certificados.crypto import generate_key_pair, sign_data, verify_sign
 from certificados.models import PeriodoMedida
 
 # Configurar el entorno de Django
