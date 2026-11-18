@@ -1,6 +1,8 @@
 import uuid
-from django.db import models
+
 from django.conf import settings
+from django.db import models
+
 
 class PeriodoMedida(models.Model):
     """ Representa el período de medición de biomasa (ej. 2026-I). 
@@ -54,7 +56,7 @@ class Certificado(models.Model):
 
     emitted_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='VIGENTE')
-    revocation_reasons = models.TextField(blank=True, null=True)
+    revocation_reasons = models.TextField(blank=True, default="")
 
     canonical_data = models.JSONField(help_text="Payload JSON Estructurado que fue firmado")
     sign_digital = models.TextField(help_text="Firma digital RSA-SHA256 en Base64")
@@ -68,6 +70,6 @@ class Certificado(models.Model):
             condition=models.Q(status='VIGENTE'), 
             name='unique_certificado_vigente_por_parcela_periodo' ) 
             ] 
-        
-        def __str__(self): 
-            return f"Certificado {self.id} - Finca {self.finca_id} ({self.toneladas_co2} tCO2)"
+
+    def __str__(self):
+        return f"Certificado {self.id} - Finca {self.finca_id} ({self.tons_co2} tCO2)"
