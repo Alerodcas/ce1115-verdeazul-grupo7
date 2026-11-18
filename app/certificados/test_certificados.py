@@ -1,15 +1,16 @@
-import os
-import sys
-import uuid
 import django
+import uuid
+import os
+from certificados.models import PeriodoMedida
+from certificados.crypto import generate_key_pair, sign_data, verify_sign
+from django.contrib.auth import get_user_model
 
 # Configurar el entorno de Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
 django.setup()
 
-from certificados.models import PeriodoMedicion, Certificado
-from certificados.crypto import generar_par_claves, firmar_datos, verificar_firma
-from django.contrib.auth import get_user_model
+
+
 
 User = get_user_model()
 
@@ -23,17 +24,17 @@ def ejecutar_pruebas():
         username="auditor_test", 
         defaults={"is_staff": True, "email": "auditor@verdeazul.com"}
     )
-    periodo, _ = PeriodoMedicion.objects.get_or_create(
-        nombre="Período 2026-I Test Script", 
-        anio=2026, 
-        defaults={"estado": "ABIERTO", "modificado_por": user}
+    period, _ = PeriodoMedida.objects.get_or_create(
+        name="Período 2026-I Test Script", 
+        year=2026, 
+        defaults={"status": "ABIERTO", "modified_by": user}
     )
 
-    print(f"\n[+] Período de medición: '{periodo.nombre}' (Estado: {periodo.estado})")
+    print(f"\n[+] Período de medición: '{period.name}' (Estado: {period.status})")
 
     # 2. Generar Par de Claves RSA
     print("[+] Generando par de claves criptográficas RSA-256 de prueba...")
-    priv_key, pub_key = generar_par_claves()
+    priv_key, pub_key = generate_key_pair()
 
     # 3. Datos del Certificado (Payload Canónico)
     finca_id = str(uuid.uuid4())
@@ -42,13 +43,13 @@ def ejecutar_pruebas():
         "finca_id": finca_id,
         "parcela_id": parcela_id,
         "toneladas_co2": 245.80,
-        "periodo": periodo.nombre
+        "periodo": period.name
     }
 
     # 4. Firmar los datos
     print("[+] Generando firma digital RSA-SHA256...")
-    firma_b64 = firmar_datos(payload, priv_key)
-    print(f"    Firma (Base64 truncado): {firma_b64[:45]}...")
+    sign_b64 = sign_data(payload, priv_key)
+    print(f"    Firma (Base64 truncado): {sign_b64[:45]}...")
 
     # -------------------------------------------------------------
     # PRUEBA 1: Verificación de Certificado Auténtico
@@ -56,10 +57,10 @@ def ejecutar_pruebas():
     print("\n" + "-" * 50)
     print("PRUEBA 1: Verificación de Certificado Auténtico (Sin alterar)")
     print("-" * 50)
-    es_valida_original = verificar_firma(payload, firma_b64, pub_key)
+    es_valida_original = verify_sign(payload, sign_b64, pub_key)
     print(f"Resultado de Verificación: {es_valida_original}")
     if es_valida_original:
-        print(" SUCCESS: El certificado es 100% auténtico e íntegro.")
+        print(" SUCCESS: El certificado es auténtico e íntegro.")
     else:
         print(" FAILED: La firma válida fue rechazada por error.")
 
@@ -72,7 +73,7 @@ def ejecutar_pruebas():
     payload_alterado = payload.copy()
     payload_alterado["toneladas_co2"] = 9999.99  # Intento de alteración de datos
 
-    es_valida_alterado = verificar_firma(payload_alterado, firma_b64, pub_key)
+    es_valida_alterado = verify_sign(payload_alterado, sign_b64, pub_key)
     print(f"Resultado de Verificación: {es_valida_alterado}")
     if not es_valida_alterado:
         print(" SUCCESS: El sistema detectó la alteración y RECHAZÓ el certificado.")

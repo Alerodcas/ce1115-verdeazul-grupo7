@@ -1,9 +1,10 @@
 import base64
+import json
+import os
+
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from django.conf import setting
-import json
-import os
 
 
 def generate_key_pair()-> tuple[str, str]:
@@ -28,7 +29,7 @@ def get_private_key_pem() -> str:
     Obtiene la clave privada de firma desde la variable de entorno VERDEAZUL_CERT_SIGNING_KEY
     o desde la configuración de settings.
     """
-    key = os.getenv('VERDEAZUL_CERT_SIGNING_KEY', getattr(settings, 'VERDEAZUL_CERT_SIGNING_KEY', None))
+    key = os.getenv('VERDEAZUL_CERT_SIGNING_KEY', getattr(setting, 'VERDEAZUL_CERT_SIGNING_KEY', None))
     if not key:
         raise ValueError("No se encontró la clave privada de firma (VERDEAZUL_CERT_SIGNING_KEY).")
     return key.strip().replace('\\n', '\n')
