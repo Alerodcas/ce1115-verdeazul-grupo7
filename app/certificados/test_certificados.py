@@ -1,9 +1,9 @@
 import django
 import uuid
 import os
-from certificados.models import PeriodoMedida
 from certificados.crypto import generate_key_pair, sign_data, verify_sign
 from django.contrib.auth import get_user_model
+from certificados.models import PeriodoMedida
 
 # Configurar el entorno de Django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'config.settings')
