@@ -2,9 +2,11 @@
 #  Servicio de Cloud Run — Verdeazul Carbono S.A.
 #  CE-1115 Proyecto Parte 2 · Grupo 7
 #
-#  Tres contenedores en una sola instancia. Comparten la interfaz de red local,
-#  así que `localhost` dentro de la instancia es privado: ningún puerto salvo
-#  el de Caddy es alcanzable desde internet.
+#  Tres contenedores en una sola instancia. Comparten su espacio de red, y
+#  Cloud Run expone a internet UNICAMENTE el puerto que declara el contenedor
+#  de ingreso. Los puertos 8000 y 8181 no son alcanzables desde fuera de la
+#  instancia aunque estén ligados a 0.0.0.0: el aislamiento lo da la
+#  plataforma, no la dirección de escucha. Ver docs/DESVIACIONES.md (D-05).
 #
 #      internet ──HTTPS──> front end de Google ──HTTP──> caddy:8080   (ingreso)
 #                                                          │ loopback
@@ -87,14 +89,21 @@ spec:
           env:
             - name: APP_PORT
               value: "8000"
+            # Escucha en todas las interfaces de la instancia, no solo loopback.
+            # La sonda de arranque de Cloud Run no alcanza un puerto ligado a
+            # 127.0.0.1, y sin sonda el contenedor nunca se declara listo.
+            # El puerto sigue siendo privado: Cloud Run solo expone a internet
+            # el puerto declarado por el contenedor de ingreso (caddy:8080).
+            - name: GUNICORN_BIND
+              value: "0.0.0.0:8000"
             - name: APP_VERSION
               value: "${IMAGE_TAG}"
             - name: DJANGO_DEBUG
               value: "False"
             - name: DJANGO_ALLOWED_HOSTS
-              value: "${PUBLIC_HOST}"
+              value: "${ALLOWED_HOSTS_VALUE}"
             - name: DJANGO_CSRF_TRUSTED_ORIGINS
-              value: "https://${PUBLIC_HOST}"
+              value: "${CSRF_ORIGINS_VALUE}"
             - name: OPA_URL
               value: "http://127.0.0.1:8181"
             # --- secretos: solo referencias, nunca valores -------------------
@@ -134,6 +143,20 @@ spec:
         # ---------------------------------------------------------------------
         - name: opa
           image: ${REGISTRY}/opa:${IMAGE_TAG}
+          # Se reemplaza el CMD de la imagen para ligar 0.0.0.0 en vez de
+          # 127.0.0.1, por la misma razón que en `app`: la sonda de arranque no
+          # alcanza loopback. Localmente (compose.yaml) sí se usa loopback,
+          # porque ahí los contenedores comparten el espacio de red.
+          args:
+            - run
+            - --server
+            - --addr
+            - 0.0.0.0:8181
+            - --log-level
+            - error
+            - --set
+            - decision_logs.console=false
+            - /policies
           resources:
             limits:
               cpu: 200m

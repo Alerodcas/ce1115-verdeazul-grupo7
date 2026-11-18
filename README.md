@@ -6,8 +6,14 @@ Implementación y despliegue del sistema diseñado en la Parte 1: control de acc
 híbrido RBAC2 + ABAC, bitácora de auditoría y emisión de certificados de carbono
 firmados digitalmente.
 
-- **URL pública:** _(se completa tras el primer despliegue)_
-- **Versión desplegada:** _(se completa tras el primer despliegue)_
+- **URL pública:** <https://verdeazul-2wkb3ke6wq-uc.a.run.app>
+  (Cloud Run asigna una segunda URL al mismo servicio, también válida:
+  <https://verdeazul-748556475165.us-central1.run.app>)
+- **Versión desplegada:** `v1.1.0`
+- **Comprobación rápida:** `curl -s https://verdeazul-2wkb3ke6wq-uc.a.run.app/ready`
+  responde `{"status": "ok", "version": "v1.1.0"}` — esa ruta es la única que
+  consulta la base de datos, así que un `ok` confirma los tres contenedores
+  más Neon.
 
 ---
 
@@ -21,12 +27,12 @@ Parte 1 con las piezas que exige el enunciado de la Parte 2.
                    ┌─────────────────────────────────────────────┐
   internet         │          instancia de Cloud Run             │
      │             │                                             │
-     │  HTTPS      │   ┌──────────┐  loopback  ┌──────────────┐  │
+     │  HTTPS      │   ┌──────────┐  interno   ┌──────────────┐  │
      └────────────►│   │  caddy   │───────────►│     app      │  │
    front end de    │   │  :8080   │            │ Django + DRF │  │
    Google (TLS)    │   │ Zona 1   │            │  (PEP) :8000 │  │
                    │   └──────────┘            └───────┬──────┘  │
-                   │                                   │loopback │
+                   │                                   │interno  │
                    │                           ┌───────▼──────┐  │
                    │                           │     opa      │  │
                    │                           │  (PDP) :8181 │  │
@@ -44,8 +50,8 @@ Parte 1 con las piezas que exige el enunciado de la Parte 2.
 | Contenedor | Imagen | Puerto | Qué hace |
 |---|---|---|---|
 | `caddy` | `…/verdeazul/caddy` | 8080 (ingreso) | Único expuesto. Límite de tasa y de tamaño, métodos permitidos, cabeceras de seguridad. |
-| `app` | `…/verdeazul/app` | 8000 (loopback) | Django + DRF. Autenticación, sesión, validación, punto de aplicación de la política (PEP). |
-| `opa` | `…/verdeazul/opa` | 8181 (loopback) | Motor de decisión (PDP) con las reglas de la matriz en Rego. No alcanzable desde internet. |
+| `app` | `…/verdeazul/app` | 8000 (interno) | Django + DRF. Autenticación, sesión, validación, punto de aplicación de la política (PEP). |
+| `opa` | `…/verdeazul/opa` | 8181 (interno) | Motor de decisión (PDP) con las reglas de la matriz en Rego. No alcanzable desde internet. |
 
 Detalle de componentes, fronteras de confianza y desviaciones respecto a la
 Parte 1: [`docs/ARQUITECTURA-DESPLEGADA.md`](docs/ARQUITECTURA-DESPLEGADA.md) y
@@ -139,7 +145,8 @@ corriendo?* y *¿a cuál volvemos?*
 
 | Versión | Commit | Fecha | Qué cambió |
 |---|---|---|---|
-| `v1.0.0` | `bec4499` | 2026-11-13 | Primer despliegue: los tres contenedores, secretos en Secret Manager y base en Neon (us-east-2). |
+| `v1.1.0` | _(pendiente)_ | 2026-11-15 | **Desplegada.** Agrega las apps `negocio` y `auditoria` (modelos de las 7 entidades y bitácora de solo inserción). `app` y `opa` escuchan en todas las interfaces de la instancia (D-05). |
+| `v1.0.0` | `bec4499` | 2026-11-13 | Construida y publicada, nunca desplegada: la revisión fue rechazada por declarar la variable reservada `PORT` y por las sondas contra loopback. |
 
 Digests de las imágenes de `v1.0.0`, tal como quedaron en Artifact Registry
 (`us-central1-docker.pkg.dev/<proyecto>/verdeazul`):
@@ -211,6 +218,6 @@ Dependabot vigila Python, las imágenes base y las propias acciones de GitHub
 | Kevin Chinchilla Rodríguez | Motor de autorización (RBAC2 + ABAC) | `opa/policies/`, `app/authz/` |
 | Eder Vega Suazo | Gestión de secretos y seguridad heredada | Secret Manager, Dependabot, secciones 5.1.3 y 5.1.4 |
 | Luis Alexis Alvarado Barrantes | Certificación digital y políticas de cuentas | app `certificados` (pendiente), sección 5.1.5 |
-| Daniel Cob Beirute | Auditoría, trazabilidad y datos | apps `negocio` y `auditoria` (pendientes), consolidación del informe |
+| Daniel Cob Beirute | Auditoría, trazabilidad y datos | apps `negocio` y `auditoria`, consolidación del informe |
 
 La defensa es individual: cada quien responde por el sistema completo.
