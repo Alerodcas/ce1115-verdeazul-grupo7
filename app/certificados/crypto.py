@@ -6,9 +6,6 @@ import json
 import os
 
 
-s
-
-
 def generate_key_pair()-> tuple[str, str]:
     """ Genera un par de claves criptográficas RSA de 2048 bits. Returns: tuple[str, str]: (private_key_pem, public_key_pem) en formato PEM (UTF-8). """
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
