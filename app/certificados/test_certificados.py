@@ -1,8 +1,9 @@
 import os
 import uuid
-import django
 
+import django
 from django.contrib.auth import get_user_model
+
 from certificados.crypto import generate_key_pair, sign_data, verify_sign
 from certificados.models import PeriodoMedida
 
