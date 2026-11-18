@@ -1,10 +1,12 @@
 import base64
+from cryptography.hazmat.primitives import hashes, serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from django.conf import setting
 import json
 import os
 
-from cryptography.hazmat.primitives import hashes, serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from django.conf import settings
+
+s
 
 
 def generate_key_pair()-> tuple[str, str]:
