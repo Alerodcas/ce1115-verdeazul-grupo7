@@ -74,7 +74,7 @@ INSTALLED_APPS = [
     "authz",  # PEP: cliente del motor de decisión OPA (Kevin)
     "certificados", # emisión y verificación firmada (Luis)
     "auditoria",  # bitácora de auditoría (Daniel)
-    "negocio",  # Finca, Período, Medición, Enmienda, Certificado, Cuenta (Daniel)
+    "negocio",  # Finca, Período, Medición, Enmienda, Cuenta (Daniel)
 ]
 
 MIDDLEWARE = [
