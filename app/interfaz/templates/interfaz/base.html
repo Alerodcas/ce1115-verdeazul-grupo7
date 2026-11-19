@@ -1,0 +1,98 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ pantalla.nombre }}, {{ rol.nombre }} — Registro Verdeazul</title>
+  <link rel="stylesheet" href="{% static 'interfaz/registro.css' %}">
+  {# Todo el JavaScript es externo: la CSP no admite guiones en línea. #}
+  <script src="{% static 'interfaz/js/registro.js' %}" defer></script>
+  {% block guiones %}{% endblock %}
+</head>
+<body class="rol-{{ rol.clase }}"
+      data-usuario-id="{{ user.pk }}"
+      data-usuario="{{ user.get_username }}"
+      data-rol="{{ rol.valor }}"
+      data-mfa-restante="{{ mfa_restante }}"
+      data-url-entrar="{% url 'interfaz:entrar' %}"
+      data-url-mfa="{% url 'interfaz:segundo_factor' %}"
+      data-url-rol="{% url 'interfaz:rol' %}"
+      data-otros-roles="{% if otros_roles %}1{% endif %}"
+      data-directorio="{% if usa_directorio %}{% url 'interfaz:directorio' %}{% endif %}"
+      data-ruta="{{ request.path }}">
+<div class="armazon">
+  <aside class="riel">
+    <div class="riel__casa">
+      <strong>Verdeazul Carbono S.A.</strong>
+      Registro de certificación de carbono
+    </div>
+
+    <div class="riel__persona">{{ user.get_username }} <span class="mono">#{{ user.pk }}</span></div>
+
+    <section class="rol-activo" aria-label="Rol activo">
+      <div class="rol-activo__etiqueta">Rol activo</div>
+      <div class="rol-activo__nombre">{{ rol.nombre }}</div>
+      <a href="{% url 'interfaz:rol' %}?cambiar=1&amp;next={{ request.path|urlencode }}">Cambiar de rol</a>
+    </section>
+
+    <p class="riel__mfa{% if mfa_restante %} riel__mfa--vigente{% endif %}" id="estado-mfa">
+      {% if mfa_restante %}
+        Segundo factor: <strong>confirmado</strong>, vence en
+        <span id="mfa-minutos">{{ mfa_minutos }} min</span>.
+      {% else %}
+        Segundo factor: <strong>sin confirmar</strong>.
+      {% endif %}
+      <a href="{% url 'interfaz:segundo_factor' %}?next={{ request.path|urlencode }}">Confirmar</a>
+    </p>
+
+    <nav aria-label="Registros">
+      <p class="menu__titulo">En su alcance</p>
+      <ul class="menu menu--propio">
+        {% for p in menu_propio %}
+          <li><a href="{% url 'interfaz:pantalla' p.clave %}"{% if p.clave == pantalla.clave %} aria-current="page"{% endif %}>{{ p.nombre }}</a></li>
+        {% endfor %}
+      </ul>
+      {% if menu_resto %}
+        <p class="menu__titulo menu__titulo--resto">Fuera de su alcance</p>
+        <ul class="menu menu--resto">
+          {% for p in menu_resto %}
+            <li><a href="{% url 'interfaz:pantalla' p.clave %}"{% if p.clave == pantalla.clave %} aria-current="page"{% endif %}>{{ p.nombre }}</a></li>
+          {% endfor %}
+        </ul>
+        <p class="menu__nota">Puede abrirlos igual: el servidor le dirá qué regla lo impide.</p>
+      {% endif %}
+    </nav>
+
+    <form class="riel__salir" method="post" action="{% url 'interfaz:salir' %}">
+      {% csrf_token %}
+      <button class="boton boton--discreto" type="submit">Salir</button>
+    </form>
+  </aside>
+
+  <main class="principal" id="principal">
+    <header class="cabecera">
+      <h1>{{ pantalla.nombre }}</h1>
+      <p>{% block descripcion %}{% endblock %}</p>
+    </header>
+
+    {# Ayuda escrita a partir de la política. No decide: lo que pase lo dice la constancia. #}
+    <section class="guia{% if not en_alcance %} guia--fuera{% endif %}" aria-labelledby="t-guia">
+      <h2 id="t-guia">{% if en_alcance %}Qué puede hacer aquí como {{ rol.nombre }}{% else %}Esta pantalla está fuera del alcance de {{ rol.nombre }}{% endif %}</h2>
+      <dl>
+        <dt>Puede</dt><dd>{{ guia.puede }}</dd>
+        <dt>No puede</dt><dd>{{ guia.no_puede }}</dd>
+      </dl>
+      <p class="guia__nota">Los formularios y botones se muestran a todos los roles a propósito: pruebe
+        una acción y el resultado aparece debajo, con la regla que lo decidió.</p>
+    </section>
+
+    {% block contenido %}{% endblock %}
+
+    {# Nombres de usuario para los campos «persona»; lo llena registro.js si el rol usa el directorio. #}
+    <datalist id="lista-usuarios"></datalist>
+
+    <footer class="pie">Versión <span class="mono">{{ version_app }}</span></footer>
+  </main>
+</div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+{% extends "interfaz/base_sola.html" %}
+{% block titulo %}Entrar{% endblock %}
+{% block contenido %}
+  <div class="cabecera">
+    <h1>Entrar al registro</h1>
+    <p>Mediciones y certificados de carbono con valor legal. Cada acción queda en la
+       bitácora junto con la regla que la permitió o la negó.</p>
+  </div>
+
+  {% if aviso %}<p class="aviso" role="status">{{ aviso }}</p>{% endif %}
+
+  {% if form %}
+  <form method="post" action="{% url 'interfaz:entrar' %}">
+    {% csrf_token %}
+    {% for e in form.non_field_errors %}<p class="error" role="alert">{{ e }}</p>{% endfor %}
+    <label class="campo">
+      <span>Usuario</span>
+      <input name="username" autocomplete="username" autocapitalize="none" spellcheck="false"
+             required autofocus value="{{ form.username.value|default:'' }}">
+    </label>
+    <label class="campo">
+      <span>Contraseña</span>
+      <input name="password" type="password" autocomplete="current-password" required>
+    </label>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="boton boton--principal" type="submit">Entrar</button>
+  </form>
+  {% endif %}
+{% endblock %}
