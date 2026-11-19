@@ -1,6 +1,7 @@
 """Entidades del negocio (docs/CONTRATO-DATOS.md §2).
 
-Dueño: Daniel. La bitácora (`Bitacora`) vive en la app `auditoria`.
+Dueño: Daniel. La bitácora (`Bitacora`) vive en la app `auditoria` y `Certificado`
+en la app `certificados` (Luis), que es quien lo firma.
 
 Reglas que este módulo sostiene a nivel de base de datos, porque son las que no
 deben depender de que cada vista se acuerde de comprobarlas:
@@ -8,7 +9,6 @@ deben depender de que cada vista se acuerde de comprobarlas:
 * Ningún objeto se borra (Parte 1: trazabilidad por diez años). `delete()` y el
   borrado en lote levantan `ProtectedOperation`; las claves foráneas son
   `PROTECT`. Lo que sale de circulación se desactiva o cambia de estado.
-* Un solo certificado vigente por finca y período (regla C3).
 * El ejecutor y el aprobador de una cuenta son personas distintas (regla C6).
 
 Los atributos que consume el PDP (`es_autor`, `fue_editor`, `estado_objeto`...)
@@ -158,39 +158,6 @@ class Enmienda(SinBorrado):
 
     def __str__(self):
         return f"Enmienda de medicion {self.medicion_id} ({self.estado})"
-
-class Certificado(SinBorrado):
-    class Estado(models.TextChoices):
-        VIGENTE = "vigente"
-        REVOCADO = "revocado"
-
-    finca = models.ForeignKey(Finca, on_delete=models.PROTECT, related_name="certificados")
-    periodo = models.ForeignKey(Periodo, on_delete=models.PROTECT, related_name="certificados")
-    estado = models.CharField(max_length=10, choices=Estado.choices, default=Estado.VIGENTE)
-    emitido_por = models.ForeignKey(
-        Usuario, on_delete=models.PROTECT, related_name="certificados_emitidos"
-    )
-    emitido_en = models.DateTimeField(auto_now_add=True)
-    revocado_por = models.ForeignKey(
-        Usuario, null=True, blank=True, on_delete=models.PROTECT,
-        related_name="certificados_revocados",
-    )
-    revocado_en = models.DateTimeField(null=True, blank=True)
-
-    class Meta:
-        constraints = [
-            # Regla C3. Índice único parcial en lugar de restricción de exclusión
-            # para que las pruebas corran igual en SQLite (CONTRATO §6.5).
-            models.UniqueConstraint(
-                fields=["finca", "periodo"],
-                condition=Q(estado="vigente"),
-                name="un_certificado_vigente_por_finca_periodo",
-            )
-        ]
-
-
-    def __str__(self):
-        return f"Certificado {self.finca_id}/{self.periodo_id} ({self.estado})"
 
 class Cuenta(SinBorrado):
     """Gestión de una cuenta de usuario: solicitud escrita y doble control (C6)."""

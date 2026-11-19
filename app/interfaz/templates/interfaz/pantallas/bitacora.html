@@ -1,0 +1,78 @@
+{% extends "interfaz/base.html" %}
+{% load static %}
+{% block guiones %}<script src="{% static 'interfaz/js/bitacora.js' %}" defer></script>{% endblock %}
+{% block descripcion %}Bitácora de auditoría, de solo inserción. Cada entrada guarda quién, con qué
+rol, qué hizo, el resultado y la regla que lo decidió, y encadena el hash de la entrada anterior:
+cambiar o quitar una fila rompe la cadena desde ahí. La leen Auditor externo y Gerencia; leerla
+también deja rastro.{% endblock %}
+
+{% block contenido %}
+<section class="seccion" aria-labelledby="t-cadena">
+  <div class="seccion__encabezado">
+    <h2 id="t-cadena">Integridad de la cadena</h2>
+    <p>El servidor recalcula cada hash desde la primera entrada.</p>
+  </div>
+  <div class="accion">
+    <div class="campos"><button class="boton boton--principal" type="button" id="verificar-cadena">Verificar cadena</button></div>
+    <ol class="constancias" id="constancias-cadena" aria-live="polite"></ol>
+  </div>
+</section>
+
+<section class="seccion" aria-labelledby="t-registro">
+  <div class="seccion__encabezado">
+    <h2 id="t-registro">Entradas</h2>
+    <p>Más reciente primero. «Enlaza» compara, dentro de esta página, el hash previo de cada
+       entrada con el hash de la anterior.</p>
+  </div>
+  <form class="campos" id="filtros" autocomplete="off">
+    <label class="campo"><span>Resultado</span>
+      <select name="resultado">
+        <option value="">Todos</option>
+        <option value="exito">Éxito</option>
+        <option value="denegado">Denegado</option>
+        <option value="fallo">Fallo</option>
+      </select></label>
+    <label class="campo filtro-ancho"><span>Acción</span>
+      <select name="accion">
+        <option value="">Todas</option>
+        <option value="Read">Read: leer</option>
+        <option value="Create">Create: crear</option>
+        <option value="Update">Update: editar o enviar</option>
+        <option value="Approve">Approve: aprobar</option>
+        <option value="Return">Return: devolver</option>
+        <option value="Authorize">Authorize: autorizar o rechazar</option>
+        <option value="Open">Open: abrir período</option>
+        <option value="Close">Close: cerrar período</option>
+        <option value="Deactivate">Deactivate: desactivar</option>
+        <option value="AUTH.LOGIN">AUTH.LOGIN: ingreso</option>
+        <option value="AUTH.LOGOUT">AUTH.LOGOUT: salida</option>
+        <option value="AUTH.ROLE_CHANGE">AUTH.ROLE_CHANGE: cambio de rol</option>
+        <option value="AUTH.MFA">AUTH.MFA: segundo factor</option>
+      </select></label>
+    <label class="campo filtro-ancho"><span>Regla</span>
+      <select name="rule_id">
+        <option value="">Todas</option>
+        <option value="MATRIZ_SIMPLE">MATRIZ_SIMPLE: celda incondicional</option>
+        <option value="DENY_DEFAULT">DENY_DEFAULT: negación por omisión</option>
+        <option value="FAIL_CLOSED">FAIL_CLOSED: el motor no respondió</option>
+        <option value="C1">C1: mediciones del técnico</option>
+        <option value="C2">C2: aprobar o devolver</option>
+        <option value="C3">C3: emitir certificado</option>
+        <option value="C4">C4: enmiendas</option>
+        <option value="C5">C5: lecturas de fincas</option>
+        <option value="C6">C6: cambios de cuenta</option>
+        <option value="S1">S1: fincas asignadas</option>
+        <option value="S2">S2: fincas propias</option>
+      </select></label>
+    <label class="campo"><span>Actor (nombre de usuario)</span><input name="actor" list="lista-usuarios" spellcheck="false" autocapitalize="off"></label>
+    <button class="boton" type="submit">Filtrar</button>
+  </form>
+  <ol class="constancias" id="constancias-filtros" aria-live="polite"></ol>
+  <div id="registro" class="registro-contenedor" aria-live="polite"><p class="suave">Cargando la bitácora…</p></div>
+  <div class="paginacion">
+    <button class="boton boton--discreto" type="button" id="mas-recientes">Más recientes</button>
+    <span id="pagina" class="suave"></span>
+    <button class="boton boton--discreto" type="button" id="mas-antiguas">Más antiguas</button>
+  </div>
+</section>
+{% endblock %}
