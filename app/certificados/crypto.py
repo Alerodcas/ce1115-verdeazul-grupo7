@@ -26,10 +26,16 @@ def generate_key_pair()-> tuple[str, str]:
 
 def get_private_key_pem() -> str:
     """
-    Obtiene la clave privada de firma desde la variable de entorno VERDEAZUL_CERT_SIGNING_KEY
-    o desde la configuración de settings.
+    Obtiene la clave privada de firma desde la variable de entorno
+    CERT_SIGNING_KEY usada por Cloud Run.
     """
-    key = os.getenv('VERDEAZUL_CERT_SIGNING_KEY', getattr(settings, 'VERDEAZUL_CERT_SIGNING_KEY', None))
+    key = os.getenv(
+        'CERT_SIGNING_KEY',
+        os.getenv(
+            'VERDEAZUL_CERT_SIGNING_KEY',
+            getattr(settings, 'VERDEAZUL_CERT_SIGNING_KEY', None),
+        ),
+    )
     if not key:
         raise ValueError("No se encontró la clave privada de firma (VERDEAZUL_CERT_SIGNING_KEY).")
     return key.strip().replace('\\n', '\n')
