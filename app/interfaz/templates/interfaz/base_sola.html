@@ -1,0 +1,19 @@
+{% load static %}<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block titulo %}{% endblock %} — Registro Verdeazul</title>
+  <link rel="stylesheet" href="{% static 'interfaz/registro.css' %}">
+</head>
+<body>
+  <main class="sola">
+    <div class="sola__marca">
+      <strong>Verdeazul Carbono S.A.</strong>
+      Registro de certificación de carbono
+    </div>
+    {% block contenido %}{% endblock %}
+    <footer class="pie">Versión <span class="mono">{{ version_app }}</span></footer>
+  </main>
+</body>
+</html>

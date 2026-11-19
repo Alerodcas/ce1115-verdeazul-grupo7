@@ -13,4 +13,5 @@ urlpatterns = [
     path("certificados/", include("certificados.urls")),  # Luis
     path("api/", include("negocio.urls")),  # Daniel
     path("bitacora/", include("auditoria.urls")),  # Daniel
+    path("", include("interfaz.urls")),  # pantallas web: entrar/, rol/, registro/...
 ]

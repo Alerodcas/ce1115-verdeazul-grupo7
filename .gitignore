@@ -46,3 +46,8 @@ bandit-report.json
 Thumbs.db
 temp/
 .neon
+
+# --- entorno local de la interfaz ---
+node_modules/
+*.log
+opa.exe

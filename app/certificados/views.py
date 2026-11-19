@@ -4,7 +4,7 @@ from rest_framework import generics, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .crypto import get_private_key_pem, sign_data
+from .crypto import get_private_key_pem, get_public_from_private_pem_key, sign_data
 from .models import Certificado, PeriodoMedida
 from .serializers import (
     CertificadoDetailSerializer,
@@ -66,7 +66,10 @@ class CertificadoEmisionView(generics.CreateAPIView):
         period = serializer.validated_data['period']
         finca_id = str(serializer.validated_data['finca_id'])
         parcela_id = serializer.validated_data['parcela_id']
-        tons_co2 = float(serializer.validated_data['tons_co2'])
+        # Texto con dos decimales, a partir del Decimal: «10.00». Un float se serializa como
+        # 10.0 y el navegador lo reescribe como 10, con lo que la firma deja de coincidir;
+        # un texto sobrevive igual a cualquier ida y vuelta por JSON.
+        tons_co2 = format(serializer.validated_data['tons_co2'], '.2f')
 
         # 1. Construir payload de datos canónicos para la firma
         canonical_data = {
@@ -82,7 +85,8 @@ class CertificadoEmisionView(generics.CreateAPIView):
         # 2. Firmar digitalmente los datos con la clave privada del sistema
         try:
             private_key_pem = get_private_key_pem()
-            sign_b64, public_key_pem = sign_data(canonical_data, private_key_pem)
+            sign_b64 = sign_data(canonical_data, private_key_pem)
+            public_key_pem = get_public_from_private_pem_key(private_key_pem)
         except Exception as e:
             return Response(
                 {"detail": f"Error al generar la firma digital: {str(e)}"},

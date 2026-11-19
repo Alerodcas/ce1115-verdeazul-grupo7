@@ -1,10 +1,20 @@
 """Siembra los datos mínimos para demostrar el sistema y sacar la evidencia.
 
 Crea los seis grupos de rol, una persona por cada rol (más tres de apoyo para las
-pruebas de separación de funciones), una finca con su técnico y dueño, y dos
-períodos. **No crea mediciones, enmiendas ni cuentas**: esas se hacen por la API,
-para que cada una deje su entrada en la bitácora. Si se sembraran por la base, la
-evidencia mostraría acciones sin rastro.
+pruebas de separación de funciones), cuatro fincas y tres períodos:
+
+- «Finca Demo La Esperanza»: la original, con demo_tecnico asignado y demo_dueno de dueño.
+- «Finca Demo C1 Segunda» y «Finca Demo C1 Tercera»: también de demo_dueno y asignadas a
+  demo_tecnico. Como hay una sola medición por finca y período, dan más intentos del
+  camino permitido de C1 antes de chocar con la unicidad.
+- «Finca Demo Sin Técnico (S1)»: de demo_dueno y sin técnico asignado, para que la
+  negación de S1 se pueda mostrar con una finca concreta.
+- Períodos DEMO-ABIERTO y DEMO-CERRADO (los originales) y DEMO-ABIERTO-2, un segundo
+  período abierto con el mismo fin que las fincas C1.
+
+**No crea mediciones, enmiendas ni cuentas**: esas se hacen por la API, para que cada
+una deje su entrada en la bitácora. Si se sembraran por la base, la evidencia mostraría
+acciones sin rastro.
 
 Contraseña: sale de la variable de entorno VERDEAZUL_DEMO_PASSWORD. No se escribe
 en el código ni se imprime. Se aplica solo a las cuentas que se crean.
@@ -28,6 +38,14 @@ from django.db import transaction
 
 from negocio.models import ROLES, Finca, Periodo
 
+# Fincas además de la original: nombre → (¿se asigna a demo_tecnico?, ubicación, área).
+# Todas son de demo_dueno. Los nombres dicen para qué están.
+FINCAS_EXTRA = {
+    "Finca Demo C1 Segunda": (True, "Zona de prueba, para repetir C1", "8.00"),
+    "Finca Demo C1 Tercera": (True, "Zona de prueba, para repetir C1", "6.25"),
+    "Finca Demo Sin Técnico (S1)": (False, "Zona de prueba, sin técnico: negación S1", "4.75"),
+}
+
 # usuario → rol (grupo). Los tres últimos son de apoyo.
 USUARIOS = {
     "demo_tecnico": "Tecnico de campo",
@@ -43,7 +61,7 @@ USUARIOS = {
 
 
 class Command(BaseCommand):
-    help = "Siembra roles, usuarios demo, una finca y dos períodos. Idempotente."
+    help = "Siembra roles, usuarios demo, cuatro fincas y tres períodos. Idempotente."
 
     def add_arguments(self, parser):
         parser.add_argument("--confirmar", action="store_true",
@@ -97,7 +115,28 @@ class Command(BaseCommand):
                 etiqueta="DEMO-CERRADO",
                 defaults={"inicio": date(2025, 1, 1), "fin": date(2025, 12, 31), "abierto": False})
 
+            # Lo que se agrega después: solo se crea si falta y no se toca si ya existe
+            # (así una finca sin técnico no recibe uno, ni se pisa lo que alguien cambió).
+            for nombre, (asignada, ubicacion, area) in FINCAS_EXTRA.items():
+                extra, nueva = Finca.objects.get_or_create(
+                    nombre=nombre,
+                    defaults={"ubicacion": ubicacion, "area_ha": area,
+                              "propietario": usuarios["demo_dueno"]},
+                )
+                if nueva and asignada:
+                    extra.tecnicos.add(usuarios["demo_tecnico"])
+            Periodo.objects.get_or_create(
+                etiqueta="DEMO-ABIERTO-2",
+                defaults={"inicio": date(2026, 7, 1), "fin": date(2027, 6, 30), "abierto": True})
+            fincas = list(
+                Finca.objects.filter(nombre__in=[finca.nombre, *FINCAS_EXTRA]).order_by("pk")
+                .values_list("pk", "nombre"))
+            periodos = list(
+                Periodo.objects.filter(etiqueta__in=["DEMO-ABIERTO", "DEMO-CERRADO", "DEMO-ABIERTO-2"])
+                .order_by("pk").values_list("etiqueta", flat=True))
+
         self.stdout.write(
             f"Roles: {len(grupos)}. Cuentas demo: {len(USUARIOS)} ({len(creados)} nuevas). "
-            f"Finca id={finca.pk}. Contraseña: la de VERDEAZUL_DEMO_PASSWORD."
+            f"Fincas: {', '.join(f'{n} (id={pk})' for pk, n in fincas)}. "
+            f"Períodos: {', '.join(periodos)}. Contraseña: la de VERDEAZUL_DEMO_PASSWORD."
         )

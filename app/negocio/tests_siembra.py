@@ -12,7 +12,7 @@ from django.test import TestCase, override_settings
 
 from auditoria.models import Bitacora
 
-from .management.commands.sembrar_demo import USUARIOS
+from .management.commands.sembrar_demo import FINCAS_EXTRA, USUARIOS
 from .models import ROLES, Finca, Medicion, Periodo
 
 CLAVE = "una-clave-de-prueba-larga-93"
@@ -38,11 +38,41 @@ class SiembraTest(TestCase):
         U = get_user_model()
         self.assertEqual(U.objects.count(), len(USUARIOS))
         self.assertTrue(U.objects.get(username="demo_verificador").groups.filter(name="Verificador").exists())
-        finca = Finca.objects.get()
+        finca = Finca.objects.get(nombre="Finca Demo La Esperanza")
         self.assertEqual(finca.propietario.username, "demo_dueno")
         self.assertEqual(list(finca.tecnicos.values_list("username", flat=True)), ["demo_tecnico"])
-        self.assertEqual(Periodo.objects.filter(abierto=True).count(), 1)
-        self.assertEqual(Periodo.objects.filter(abierto=False).count(), 1)
+        self.assertEqual(Finca.objects.count(), 1 + len(FINCAS_EXTRA))
+        self.assertEqual(
+            set(Periodo.objects.filter(abierto=True).values_list("etiqueta", flat=True)),
+            {"DEMO-ABIERTO", "DEMO-ABIERTO-2"})
+        self.assertEqual(
+            list(Periodo.objects.filter(abierto=False).values_list("etiqueta", flat=True)), ["DEMO-CERRADO"])
+
+    def test_las_fincas_extra_dan_mas_intentos_de_c1_y_una_negacion_s1(self):
+        sembrar()
+        self.assertTrue(all(f.propietario.username == "demo_dueno" for f in Finca.objects.all()))
+        asignadas = Finca.objects.filter(tecnicos__username="demo_tecnico")
+        self.assertEqual(
+            set(asignadas.values_list("nombre", flat=True)),
+            {"Finca Demo La Esperanza", "Finca Demo C1 Segunda", "Finca Demo C1 Tercera"})
+        sin_tecnico = Finca.objects.get(nombre="Finca Demo Sin Técnico (S1)")
+        self.assertFalse(sin_tecnico.tecnicos.exists())
+        # demo_tecnico_ajeno sigue sin ninguna finca (su negación S1 de siempre).
+        self.assertFalse(Finca.objects.filter(tecnicos__username="demo_tecnico_ajeno").exists())
+
+    def test_las_originales_no_cambian(self):
+        sembrar()
+        finca = Finca.objects.get(nombre="Finca Demo La Esperanza")
+        self.assertEqual((finca.ubicacion, str(finca.area_ha)), ("Zona de prueba", "12.50"))
+        abierto = Periodo.objects.get(etiqueta="DEMO-ABIERTO")
+        cerrado = Periodo.objects.get(etiqueta="DEMO-CERRADO")
+        self.assertEqual((str(abierto.inicio), str(abierto.fin), abierto.abierto), ("2026-01-01", "2026-12-31", True))
+        self.assertEqual((str(cerrado.inicio), str(cerrado.fin), cerrado.abierto), ("2025-01-01", "2025-12-31", False))
+
+    def test_el_resumen_nombra_fincas_y_periodos(self):
+        salida = sembrar()
+        for nombre in ("Finca Demo La Esperanza", *FINCAS_EXTRA, "DEMO-ABIERTO-2"):
+            self.assertIn(nombre, salida)
 
     def test_no_siembra_nada_que_deba_pasar_por_la_bitacora(self):
         sembrar()
@@ -64,7 +94,9 @@ class SiembraTest(TestCase):
         sembrar()
         sembrar(clave="otra-clave-de-prueba-larga-77")
         self.assertEqual(get_user_model().objects.count(), len(USUARIOS))
-        self.assertEqual(Finca.objects.count(), 1)
+        self.assertEqual(Finca.objects.count(), 1 + len(FINCAS_EXTRA))
+        self.assertEqual(Periodo.objects.count(), 3)
+        self.assertFalse(Finca.objects.get(nombre="Finca Demo Sin Técnico (S1)").tecnicos.exists())
         self.assertTrue(get_user_model().objects.get(username="demo_admin").check_password(CLAVE))
 
     def test_exige_la_variable_y_una_clave_valida(self):
