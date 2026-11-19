@@ -1,0 +1,16 @@
+{% extends "interfaz/base.html" %}
+{% load static %}
+{% block guiones %}<script src="{% static 'interfaz/js/periodos.js' %}" defer></script>{% endblock %}
+{% block descripcion %}Períodos de medición. Solo Gerencia los abre y los cierra. Con el período
+cerrado, <code>C1</code> niega registrar o editar mediciones en él, y desde ese momento cualquier
+corrección pasa por una enmienda (<code>C4</code>).{% endblock %}
+
+{% block contenido %}
+<section class="seccion" aria-labelledby="t-registro">
+  <div class="seccion__encabezado">
+    <h2 id="t-registro">Registro de períodos</h2>
+    <p>Cerrar un período bloquea las escrituras sobre sus mediciones; abrirlo las vuelve a permitir.</p>
+  </div>
+  <div id="registro" class="registro-contenedor" aria-live="polite"><p class="suave">Cargando el registro…</p></div>
+</section>
+{% endblock %}

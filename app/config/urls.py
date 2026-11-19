@@ -10,7 +10,8 @@ from django.urls import include, path
 urlpatterns = [
     path("", include("core.urls")),
     path("admin/", admin.site.urls),
-    # path("api/", include("negocio.urls")),        # Daniel
-    # path("certificados/", include("certificados.urls")),  # Luis
-    # path("bitacora/", include("auditoria.urls")),         # Daniel
+    path("certificados/", include("certificados.urls")),  # Luis
+    path("api/", include("negocio.urls")),  # Daniel
+    path("bitacora/", include("auditoria.urls")),  # Daniel
+    path("", include("interfaz.urls")),  # pantallas web: entrar/, rol/, registro/...
 ]

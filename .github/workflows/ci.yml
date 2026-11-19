@@ -32,6 +32,7 @@ jobs:
       - name: gitleaks
         uses: gitleaks/gitleaks-action@v2
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # obligatorio para escanear pull requests
           GITLEAKS_CONFIG: .gitleaks.toml
 
   # ---------------------------------------------------------------------------
@@ -123,7 +124,7 @@ jobs:
           fi
 
       - name: Trivy (vulnerabilidades de la imagen)
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: verdeazul-${{ matrix.componente }}:ci
           severity: CRITICAL,HIGH

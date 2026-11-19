@@ -1,0 +1,38 @@
+{% extends "interfaz/base.html" %}
+{% load static %}
+{% block guiones %}<script src="{% static 'interfaz/js/fincas.js' %}" defer></script>{% endblock %}
+{% block descripcion %}Fincas inscritas en el registro. El técnico ve solo las que tiene asignadas
+(<code>S1</code>, con el límite de lecturas de <code>C5</code>), el dueño solo las suyas
+(<code>S2</code>) y el Administrador las da de alta y las desactiva. Ninguna se borra.{% endblock %}
+
+{% block contenido %}
+<section class="seccion" aria-labelledby="t-nueva">
+  <div class="seccion__encabezado">
+    <h2 id="t-nueva">Inscribir finca</h2>
+    <p>Escriba el nombre de usuario del propietario; la lista le sugiere los existentes.</p>
+  </div>
+  <form class="accion" id="form-nueva" autocomplete="off">
+    <div class="campos">
+      <label class="campo campo--ancho"><span>Nombre</span>
+        <input name="nombre" maxlength="120" required></label>
+      <label class="campo campo--ancho"><span>Ubicación</span>
+        <input name="ubicacion" maxlength="255"></label>
+      <label class="campo"><span>Área (ha)</span>
+        <input type="number" name="area_ha" step="0.01" min="0" inputmode="decimal" required></label>
+      <label class="campo"><span>Propietario (nombre de usuario)</span>
+        <input name="propietario" list="lista-usuarios" required spellcheck="false" autocapitalize="off"
+               placeholder="p. ej. demo_dueno"></label>
+      <button class="boton boton--principal" type="submit">Inscribir finca</button>
+    </div>
+    <ol class="constancias" aria-live="polite"></ol>
+  </form>
+</section>
+
+<section class="seccion" aria-labelledby="t-registro">
+  <div class="seccion__encabezado">
+    <h2 id="t-registro">Registro de fincas</h2>
+    <p>Leer la ficha deja una lectura en la bitácora: es lo que cuenta <code>C5</code>.</p>
+  </div>
+  <div id="registro" class="registro-contenedor" aria-live="polite"><p class="suave">Cargando el registro…</p></div>
+</section>
+{% endblock %}

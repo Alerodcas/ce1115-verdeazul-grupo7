@@ -1,0 +1,509 @@
+/* =============================================================================
+   Registro de certificación — hoja de estilos única de la interfaz.
+   Un instrumento de registro, no un tablero: superficie fría, filetes finos,
+   el estado de cada registro como columna estructural y el resultado de cada
+   acción como parte del registro (no como aviso que desaparece).
+   Fuentes servidas desde este mismo origen (la CSP no admite otras).
+   ============================================================================= */
+
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("fonts/IBMPlexSans-Regular-Latin1.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  src: url("fonts/IBMPlexSans-SemiBold-Latin1.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("fonts/IBMPlexMono-Regular-Latin1.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  color-scheme: light;
+
+  /* paleta base */
+  --ink: #13322B;        /* texto y estructura */
+  --paper: #F1F4F0;      /* superficie */
+  --rule: #C5D0C8;       /* filetes y bordes de tabla */
+  --denegado: #8C2B1F;   /* denegaciones y períodos cerrados */
+  --aprobado: #2F6B4F;   /* aprobaciones y certificados emitidos */
+
+  /* derivados */
+  --ink-suave: #4A6159;      /* texto secundario, 6:1 sobre paper */
+  --rule-fuerte: #8DA096;    /* filete de cabecera */
+  --hoja: #F8FAF7;           /* superficie del registro, apenas más clara */
+  --denegado-tinte: #F4E4E0;
+  --aprobado-tinte: #E2EEE6;
+  --borrador: #5D7068;
+
+  /* color del rol activo; cada rol lo reemplaza más abajo */
+  --rol: var(--ink);
+
+  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, "Liberation Mono", monospace;
+}
+
+/* Un color por rol: la identidad de la pantalla cambia con el rol activo. */
+.rol-tecnico       { --rol: #7D5F0E; }
+.rol-verificador   { --rol: #1F5A8A; }
+.rol-administrador { --rol: #57478A; }
+.rol-auditor       { --rol: #36454E; }
+.rol-dueno         { --rol: #1B6872; }
+.rol-gerencia      { --rol: #7A2D5B; }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+a { color: var(--ink); text-underline-offset: 0.15em; }
+a:hover { text-decoration-thickness: 2px; }
+
+:focus-visible { outline: 2px solid var(--rol); outline-offset: 2px; }
+
+h1, h2, h3 { margin: 0; font-weight: 600; line-height: 1.2; }
+h1 { font-size: 1.55rem; }
+h2 { font-size: 1.02rem; }
+p  { margin: 0; }
+
+code, .mono { font-family: var(--mono); font-size: 0.92em; }
+.num { font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+.suave { color: var(--ink-suave); }
+.oculto { display: none !important; }
+
+.visualmente-oculto {
+  position: absolute; width: 1px; height: 1px; overflow: hidden;
+  clip: rect(0 0 0 0); white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- armazón -- */
+.armazon {
+  display: grid;
+  grid-template-columns: 16.5rem minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.riel {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  border-right: 1px solid var(--rule);
+  padding: 1.1rem 0 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.riel__casa { padding: 0 1.1rem; font-size: 0.8125rem; line-height: 1.35; }
+.riel__casa strong { display: block; font-weight: 600; font-size: 0.875rem; }
+
+.riel__persona { padding: 0 1.1rem; font-size: 0.875rem; }
+.riel__persona .mono { color: var(--ink-suave); }
+
+/* El rol activo: el elemento más visible de la pantalla. */
+.rol-activo {
+  background: var(--rol);
+  color: var(--paper);
+  padding: 0.8rem 1.1rem 0.9rem;
+}
+.rol-activo__etiqueta { font-size: 0.8125rem; }
+.rol-activo__nombre { font-size: 1.45rem; font-weight: 600; line-height: 1.15; margin-top: 0.1rem; }
+.rol-activo a { color: var(--paper); font-size: 0.8125rem; display: inline-block; margin-top: 0.45rem; }
+
+.riel__mfa { padding: 0 1.1rem; font-size: 0.875rem; }
+.riel__mfa strong { font-weight: 600; }
+.riel__mfa--vigente strong { color: var(--aprobado); }
+
+.menu { padding: 0; margin: 0; list-style: none; }
+.menu__titulo { padding: 0 1.1rem 0.3rem; font-size: 0.8125rem; color: var(--ink-suave); }
+.menu a {
+  display: block;
+  padding: 0.38rem 1.1rem 0.38rem 0.95rem;
+  border-left: 3px solid transparent;
+  text-decoration: none;
+}
+.menu a:hover { background: var(--hoja); }
+.menu a[aria-current="page"] { border-left-color: var(--rol); font-weight: 600; background: var(--hoja); }
+.menu--resto a { color: var(--ink-suave); font-size: 0.875rem; }
+.menu__titulo--resto { margin-top: 1rem; }
+.menu__nota { padding: 0.35rem 1.1rem 0; font-size: 0.75rem; color: var(--ink-suave); }
+
+.riel__salir { margin-top: auto; padding: 0 1.1rem; }
+
+/* ---------------------------------------------------------------- principal -- */
+.principal {
+  border-top: 4px solid var(--rol);
+  padding: 1.4rem 2rem 1.5rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.cabecera { display: grid; gap: 0.35rem; max-width: 52rem; }
+.cabecera p { color: var(--ink-suave); }
+
+/* Qué puede y qué no puede el rol activo en esta pantalla. Ayuda, no control. */
+.guia {
+  max-width: 52rem;
+  border-left: 4px solid var(--rol);
+  background: var(--hoja);
+  padding: 0.6rem 1rem 0.7rem;
+  display: grid;
+  gap: 0.4rem;
+}
+.guia h2 { font-size: 0.95rem; }
+.guia dl { margin: 0; display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.25rem 0.9rem; font-size: 0.875rem; }
+.guia dt { font-weight: 600; }
+.guia dd { margin: 0; }
+.guia__nota { font-size: 0.8125rem; color: var(--ink-suave); }
+.guia--fuera { border-left-color: var(--denegado); }
+.guia--fuera h2 { color: var(--denegado); }
+
+.pie {
+  margin-top: auto;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--rule);
+  font-size: 0.75rem;
+  color: var(--ink-suave);
+}
+
+/* ----------------------------------------------------------------- secciones -- */
+.seccion { display: grid; gap: 0.7rem; }
+.seccion__encabezado { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.4rem 1rem; }
+.seccion__encabezado p { color: var(--ink-suave); font-size: 0.875rem; }
+
+/* Formulario de acción: un bloque con filete, sin tarjeta ni sombra. */
+.accion {
+  border-left: 3px solid var(--rule-fuerte);
+  padding: 0.2rem 0 0.2rem 1rem;
+  display: grid;
+  gap: 0.7rem;
+  max-width: 60rem;
+}
+.campos { display: flex; flex-wrap: wrap; gap: 0.7rem 1rem; align-items: flex-end; }
+.campo { display: grid; gap: 0.2rem; font-size: 0.8125rem; }
+.campo > span { color: var(--ink-suave); }
+.campo--ancho { flex: 1 1 18rem; }
+
+input, select, textarea {
+  font: inherit;
+  font-size: 0.9375rem;
+  color: var(--ink);
+  background: var(--hoja);
+  border: 1px solid var(--rule-fuerte);
+  border-radius: 2px;
+  padding: 0.42rem 0.55rem;
+  min-height: 2.3rem;
+  max-width: 100%;
+}
+input[type="number"] { font-variant-numeric: tabular-nums; width: 9rem; }
+textarea { width: 100%; min-height: 5.5rem; resize: vertical; }
+textarea.mono { font-size: 0.8125rem; min-height: 10rem; }
+
+/* ------------------------------------------------------------------ botones -- */
+.boton {
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--ink);
+  border-radius: 2px;
+  padding: 0.38rem 0.8rem;
+  min-height: 2.3rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.boton:hover { background: var(--hoja); }
+a.boton { display: inline-block; text-decoration: none; }
+.boton--principal { background: var(--ink); color: var(--paper); }
+.boton--principal:hover { background: #0B231E; }
+.boton--discreto { border-color: var(--rule-fuerte); font-weight: 400; }
+.boton[disabled] { opacity: 0.55; cursor: not-allowed; }
+.boton[aria-busy="true"] { cursor: progress; }
+[aria-invalid="true"] { border-color: var(--denegado); box-shadow: 0 0 0 1px var(--denegado); }
+
+/* Registro recargándose tras una acción: se atenúa sin moverse. */
+.registro-contenedor.recargando { opacity: 0.6; transition: opacity 0.15s; }
+.boton-enlace {
+  font: inherit; color: inherit; background: none; border: 0; padding: 0;
+  text-decoration: underline; text-underline-offset: 0.15em; cursor: pointer;
+}
+
+/* ----------------------------------------------------------------- registro -- */
+.registro-contenedor { overflow-x: auto; }
+
+.registro {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--hoja);
+  font-size: 0.875rem;
+}
+.registro th {
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: var(--ink-suave);
+  padding: 0.45rem 0.6rem;
+  border-bottom: 2px solid var(--rule-fuerte);
+  white-space: nowrap;
+}
+.registro th.num { text-align: right; }
+.registro td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--rule);
+  vertical-align: top;
+}
+.registro tbody.con-constancias td { border-bottom: 0; }
+.registro code { white-space: nowrap; }
+.registro td.acciones { min-width: 9rem; }
+.registro .acciones .boton { margin: 0 0.35rem 0.35rem 0; }
+
+/* El ESTADO: primera columna, un filete vertical grueso y el nombre del estado.
+   El tono lo fija la fila (tono-*), así el filete y el bloque apilado coinciden. */
+.registro tbody { --tono: var(--ink); }
+.registro tbody.tono-aprobado { --tono: var(--aprobado); }
+.registro tbody.tono-denegado { --tono: var(--denegado); }
+.registro tbody.tono-borrador { --tono: var(--borrador); }
+.registro td.estado {
+  width: 7.5rem;
+  border-left: 4px solid var(--tono);
+  color: var(--tono);
+  font-weight: 600;
+  white-space: nowrap;
+}
+.registro tbody.tono-borrador td.estado { border-left-style: dashed; }
+
+.usted { font-weight: 600; }
+
+/* Fila de constancias: lo que pasó con cada acción sobre este registro. */
+.fila-constancias td { padding-top: 0; padding-bottom: 0.55rem; border-left: 4px solid transparent; }
+.fila-constancias.vacia { display: none; }
+
+/* ------------------------------------------------------------- constancias -- */
+.constancias { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; }
+
+.constancia {
+  display: grid;
+  grid-template-columns: auto auto auto auto minmax(0, 1fr);
+  gap: 0.1rem 0.75rem;
+  align-items: baseline;
+  border-left: 3px solid var(--ink);
+  background: var(--paper);
+  padding: 0.38rem 0.7rem;
+  font-size: 0.8125rem;
+}
+.constancia time { font-family: var(--mono); color: var(--ink-suave); font-variant-numeric: tabular-nums; }
+.constancia__accion { color: var(--ink-suave); }
+.constancia__veredicto { font-weight: 600; }
+.constancia__texto { min-width: 0; }
+.constancia__datos { grid-column: 1 / -1; color: var(--ink-suave); font-size: 0.8125rem; }
+.constancia__siguiente { grid-column: 1 / -1; font-size: 0.8125rem; }
+.constancia:focus { outline: 2px solid var(--rol); outline-offset: 1px; }
+
+/* El paso que sigue en el flujo de un registro, bajo su fila. */
+.paso { font-size: 0.8125rem; color: var(--ink-suave); margin: 0 0 0.3rem; }
+.paso strong { color: var(--ink); font-weight: 600; }
+
+.constancia--exito { border-left-color: var(--aprobado); }
+.constancia--exito .constancia__veredicto { color: var(--aprobado); }
+.constancia--denegada { border-left-color: var(--denegado); background: var(--denegado-tinte); }
+.constancia--denegada .constancia__veredicto { color: var(--denegado); }
+.constancia--conflicto,
+.constancia--error { border-left-color: var(--ink-suave); }
+.constancia--sesion { border-left-color: var(--denegado); }
+
+/* Rechazo por una regla del sistema (estado, unicidad, separación de funciones en la
+   vista): filete punteado y sin el tinte rojo de la matriz, para que no se confundan. */
+.constancia--sistema { border-left: 3px dashed var(--ink); background: var(--hoja); }
+.constancia--sistema .constancia__veredicto { color: var(--ink); }
+
+/* La regla: el valor que se compara carácter por carácter. */
+.regla {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  padding: 0 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+.constancia--denegada .regla { color: var(--denegado); }
+.constancia--exito .regla { color: var(--aprobado); }
+.regla__ver { opacity: 0.75; }
+.regla__fuente { font-family: var(--sans); font-size: 0.75rem; font-weight: 600; }
+.regla--sistema { font-family: var(--sans); font-size: 0.75rem; font-weight: 600; border-style: dashed; color: var(--ink); }
+.constancia--sistema .regla:not(.regla--sistema) { color: var(--ink-suave); }
+.origen { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; }
+
+/* Bloque grande: cuando se niega leer la colección entera. */
+.negacion {
+  border-left: 4px solid var(--denegado);
+  background: var(--denegado-tinte);
+  padding: 0.9rem 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+  max-width: 52rem;
+}
+.negacion h2 { color: var(--denegado); }
+
+.vacio {
+  border-left: 3px solid var(--rule-fuerte);
+  padding: 0.6rem 1rem;
+  color: var(--ink-suave);
+  max-width: 52rem;
+}
+
+.nota {
+  font-size: 0.8125rem;
+  color: var(--ink-suave);
+  max-width: 52rem;
+}
+
+/* Hash de la bitácora: valores para comparar, en monoespaciada. */
+.hash { font-family: var(--mono); font-size: 0.78rem; white-space: nowrap; }
+.encadena { color: var(--aprobado); }
+.no-encadena { color: var(--denegado); font-weight: 600; }
+
+.filtro-ancho select { width: 19rem; }
+/* Dato que se toma de otra elección (p. ej. la finca de la medición): se lee, no se escribe. */
+.dato { display: flex; align-items: center; min-height: 2.3rem; font-size: 0.9375rem; font-weight: 600; }
+.paginacion { display: flex; gap: 0.6rem; align-items: center; font-size: 0.875rem; }
+
+/* ------------------------------------------------- pantallas sin riel (ingreso) -- */
+.sola {
+  max-width: 34rem;
+  padding: 2.4rem 1.25rem 1.5rem 2rem;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.sola__marca { border-left: 4px solid var(--ink); padding-left: 0.9rem; }
+.sola__marca strong { display: block; font-size: 1.05rem; }
+.sola form { display: grid; gap: 0.9rem; }
+.sola .campo input { width: 100%; }
+.sola .boton { justify-self: start; }
+
+.error {
+  border-left: 3px solid var(--denegado);
+  background: var(--denegado-tinte);
+  color: var(--denegado);
+  padding: 0.5rem 0.8rem;
+  font-size: 0.875rem;
+}
+.aviso { border-left: 3px solid var(--ink); background: var(--hoja); padding: 0.5rem 0.8rem; font-size: 0.875rem; }
+
+/* Lista de roles para elegir. */
+.roles { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.5rem; }
+.roles button {
+  width: 100%;
+  display: grid;
+  gap: 0.15rem;
+  text-align: left;
+  font: inherit;
+  color: var(--ink);
+  background: var(--hoja);
+  border: 1px solid var(--rule);
+  border-left: 8px solid var(--rol);
+  border-radius: 2px;
+  padding: 0.7rem 0.9rem;
+  cursor: pointer;
+}
+.roles button:hover { border-color: var(--rule-fuerte); border-left-color: var(--rol); background: #fff; }
+.roles__nombre { font-size: 1.15rem; font-weight: 600; color: var(--rol); }
+.roles__resumen { font-size: 0.875rem; color: var(--ink-suave); }
+.roles__actual { font-size: 0.8125rem; font-weight: 600; }
+
+input.codigo {
+  font-family: var(--mono);
+  font-size: 1.5rem;
+  letter-spacing: 0.3em;
+  width: 11rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ------------------------------------------------------------- pantallas angostas -- */
+@media (max-width: 760px) {
+  .armazon { grid-template-columns: minmax(0, 1fr); }
+  .riel {
+    position: static;
+    height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+    padding: 0.8rem 0 0.9rem;
+    gap: 0.7rem;
+  }
+  .rol-activo__nombre { font-size: 1.3rem; }
+  .menu--propio { display: flex; flex-wrap: wrap; gap: 0.25rem 0; padding: 0 0.6rem; }
+  .menu--propio a { border-left: 0; border-bottom: 3px solid transparent; padding: 0.45rem 0.5rem; }
+  .menu--propio a[aria-current="page"] { border-bottom-color: var(--rol); }
+  /* Lo que queda fuera del alcance sigue visible: se puede intentar y ver la regla. */
+  .menu--resto { display: flex; flex-wrap: wrap; gap: 0.25rem 0; padding: 0 0.6rem; }
+  .menu--resto a { border-left: 0; border-bottom: 3px solid transparent; padding: 0.45rem 0.5rem; }
+  .menu--resto a[aria-current="page"] { border-bottom-color: var(--rol); }
+  .menu__titulo--resto { margin-top: 0.4rem; }
+  .guia dl { grid-template-columns: minmax(0, 1fr); }
+  .riel__salir { margin-top: 0; }
+  .principal { padding: 1rem 1rem 1.25rem; gap: 1.1rem; border-top-width: 0; }
+  .sola { padding: 1.5rem 1rem; }
+  .campo, .campo--ancho { flex: 1 1 100%; }
+  .campo input, .campo select { width: 100%; }
+  .boton { min-height: 2.75rem; }
+}
+
+/* El registro se apila en el teléfono: cada registro es un bloque, el estado arriba. */
+@media (max-width: 640px) {
+  .registro, .registro tbody, .registro tr, .registro td { display: block; width: 100%; }
+  .registro thead { display: none; }
+  .registro tbody { border-bottom: 1px solid var(--rule); padding-bottom: 0.4rem; }
+  .registro tr.fila {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    border-left: 4px solid var(--tono);
+  }
+  .registro tbody.tono-borrador tr.fila { border-left-style: dashed; }
+  .registro td { border-bottom: 0; padding: 0.25rem 0.6rem; }
+  .registro td[data-etiqueta]::before {
+    content: attr(data-etiqueta);
+    display: block;
+    font-size: 0.75rem;
+    color: var(--ink-suave);
+  }
+  .registro td.num { text-align: left; }
+  .registro td.estado { grid-column: 1 / -1; border-left: 0; width: auto; padding-top: 0.5rem; font-size: 0.95rem; }
+  .registro td.acciones { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 0.4rem; white-space: normal; }
+  .registro .acciones .boton { margin: 0; }
+  .registro td.ancho { grid-column: 1 / -1; }
+  .fila-constancias td { border-left: 0; padding: 0 0 0.3rem; }
+  .constancia { grid-template-columns: auto minmax(0, 1fr); }
+  .constancia__texto, .constancia__datos { grid-column: 1 / -1; }
+  .hash { white-space: normal; word-break: break-all; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .constancia { transition: background-color 0.6s ease; }
+  .constancia.nueva { background: #fff; }
+}

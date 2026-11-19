@@ -72,9 +72,10 @@ INSTALLED_APPS = [
     # --- apps del proyecto ---
     "core",  # salud, base, plantillas comunes (Alejandra)
     "authz",  # PEP: cliente del motor de decisión OPA (Kevin)
-    # "auditoria",   # bitácora de 7 capas (Daniel) — agregar cuando exista
-    # "negocio",     # Finca, Período, Medición, Enmienda, Certificado (Daniel)
-    # "certificados" # emisión y verificación firmada (Luis)
+    "certificados", # emisión y verificación firmada (Luis)
+    "auditoria",  # bitácora de auditoría (Daniel)
+    "negocio",  # Finca, Período, Medición, Enmienda, Cuenta (Daniel)
+    "interfaz",  # pantallas web: solo plantillas, estáticos y vistas delgadas
 ]
 
 MIDDLEWARE = [
@@ -86,6 +87,9 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    # Copia a cabeceras la decisión que el PEP ya tomó (regla y versión), para que
+    # la interfaz muestre qué regla concedió o negó cada acción. No decide nada.
+    "interfaz.middleware.DecisionEnCabeceras",
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -101,6 +105,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "interfaz.contexto.version",
             ],
         },
     },
@@ -153,6 +158,11 @@ SESSION_SAVE_EVERY_REQUEST = True  # renueva por actividad, no por tiempo absolu
 
 CSRF_COOKIE_HTTPONLY = False  # el token debe poder leerse desde el formulario
 CSRF_COOKIE_SAMESITE = "Lax"
+
+# Ingreso: después de entrar se elige el rol activo (app `interfaz`).
+LOGIN_URL = "interfaz:entrar"
+LOGIN_REDIRECT_URL = "interfaz:rol"
+LOGOUT_REDIRECT_URL = "interfaz:entrar"
 
 # ---------------------------------------------------------------------------
 # Endurecimiento HTTP

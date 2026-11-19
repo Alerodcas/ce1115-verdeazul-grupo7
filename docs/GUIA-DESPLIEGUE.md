@@ -233,10 +233,10 @@ ejemplo). El enunciado lo pide explícitamente: «prueben desde una red distinta
 la suya antes de presentar».
 
 ```bash
-curl -sI https://verdeazul-abc123-uc.a.run.app/healthz
+curl -sI https://verdeazul-abc123-uc.a.run.app/health
 # HTTP/2 200
 
-curl -sI http://verdeazul-abc123-uc.a.run.app/healthz
+curl -sI http://verdeazul-abc123-uc.a.run.app/health
 # debe redirigir a https
 ```
 

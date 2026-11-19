@@ -1,0 +1,33 @@
+{% extends "interfaz/base.html" %}
+{% load static %}
+{% block guiones %}<script src="{% static 'interfaz/js/enmiendas.js' %}" defer></script>{% endblock %}
+{% block descripcion %}Correcciones a mediciones ya aprobadas. Ninguna medición se sobrescribe: autorizar
+una enmienda crea una versión nueva que apunta a la anterior y vuelve a verificación. La rige
+<code>C4</code>: la pide el técnico con motivo escrito y con el período cerrado; la autoriza
+Gerencia, que no puede ser quien la pidió.{% endblock %}
+
+{% block contenido %}
+<section class="seccion" aria-labelledby="t-nueva">
+  <div class="seccion__encabezado">
+    <h2 id="t-nueva">Pedir enmienda</h2>
+    <p>Explique qué cambia y por qué: el motivo escrito es obligatorio.</p>
+  </div>
+  <form class="accion" id="form-nueva" autocomplete="off">
+    <div class="campos">
+      <label class="campo"><span>Medición aprobada</span>
+        <select name="medicion" id="campo-medicion" required><option value="">Cargando…</option></select></label>
+      <label class="campo"><span>Valor propuesto</span>
+        <input type="number" name="valor_propuesto" step="0.001" min="0" inputmode="decimal" required></label>
+    </div>
+    <label class="campo"><span>Motivo</span>
+      <textarea name="motivo" maxlength="2000" required></textarea></label>
+    <div class="campos"><button class="boton boton--principal" type="submit">Pedir enmienda</button></div>
+    <ol class="constancias" aria-live="polite"></ol>
+  </form>
+</section>
+
+<section class="seccion" aria-labelledby="t-registro">
+  <div class="seccion__encabezado"><h2 id="t-registro">Registro de enmiendas</h2></div>
+  <div id="registro" class="registro-contenedor" aria-live="polite"><p class="suave">Cargando el registro…</p></div>
+</section>
+{% endblock %}

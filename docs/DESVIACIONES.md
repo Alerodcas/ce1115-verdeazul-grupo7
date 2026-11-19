@@ -121,6 +121,51 @@ manual que hay que documentar.
 
 ---
 
+## D-05 · El PDP y la aplicación escuchan en todas las interfaces de la instancia, no solo en loopback
+
+**Diseño original.** Frontera F3: el motor de decisión «corre junto a la
+aplicación y no se expone a la red», accesible solo por *loopback*. La
+aplicación, igual: solo Caddy le habla.
+
+**Qué se hizo.** Los tres procesos escuchan en `0.0.0.0` dentro de la instancia.
+El contenedor `caddy` declara el puerto 8080 como puerto de ingreso; `app`
+(8000) y `opa` (8181) **no declaran ninguno**.
+
+**Por qué.** Cloud Run comprueba que cada contenedor de una instancia con varios
+contenedores esté listo mediante una sonda TCP, y esa sonda no alcanza un puerto
+ligado a `127.0.0.1`. Con el diseño original el despliegue fallaba con
+`STARTUP TCP probe failed 20 times consecutively for container "opa" on port
+8181`, y como `app` depende de `opa` y `caddy` de `app`, no arrancaba nada.
+Las alternativas eran quitar las sondas —y aceptar que Caddy pueda recibir
+peticiones antes de que la aplicación esté lista, devolviendo errores en el
+primer arranque en frío— o ligar a todas las interfaces. Se eligió lo segundo.
+
+**Implicación de seguridad.** El control se mantiene, pero **lo aplica otra
+capa**, y eso hay que decirlo con precisión:
+
+- *Lo que no cambió:* ni el PDP ni la aplicación son alcanzables desde internet.
+  Cloud Run enruta el tráfico externo **únicamente** al puerto declarado por el
+  contenedor de ingreso. Los puertos 8000 y 8181 no existen desde fuera de la
+  instancia.
+- *Lo que sí cambió:* antes la garantía la daba el propio proceso, por la
+  dirección a la que se ligaba. Ahora la da la plataforma, por su enrutamiento.
+  Es una garantía más fuerte en la práctica —no depende de que nadie se equivoque
+  al configurar el proceso— pero es **heredada**, y por tanto entra en el modelo
+  de responsabilidad compartida de la sección 5.1.4 en vez de ser un control
+  propio.
+- *Lo que queda expuesto:* cualquier proceso que corriera dentro de la misma
+  instancia podría hablarle al PDP y a la aplicación. En el diseño original, con
+  loopback, eso ya era cierto —loopback es precisamente lo que comparten los
+  contenedores de la instancia—, así que no es una pérdida real. Lo sería si en
+  la instancia llegara a correr un cuarto contenedor no confiable, y no es el
+  caso.
+
+**Nota de coherencia.** En el entorno local (`compose.yaml`) se sigue usando
+`127.0.0.1`, porque ahí los contenedores comparten el espacio de red y no hay
+sondas de plataforma. La diferencia está anotada en `deploy/service.yaml`.
+
+---
+
 ## Plantilla para las desviaciones que falten
 
 ```markdown

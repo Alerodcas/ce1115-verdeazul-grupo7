@@ -44,3 +44,10 @@ bandit-report.json
 .idea/
 .DS_Store
 Thumbs.db
+temp/
+.neon
+
+# --- entorno local de la interfaz ---
+node_modules/
+*.log
+opa.exe

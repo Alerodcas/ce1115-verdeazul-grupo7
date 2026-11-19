@@ -1,0 +1,63 @@
+{% extends "interfaz/base.html" %}
+{% load static %}
+{% block guiones %}<script src="{% static 'interfaz/js/cuentas.js' %}" defer></script>{% endblock %}
+{% block descripcion %}Cambios de cuenta con doble control (<code>C6</code>): toda asignación de rol o
+baja parte de una solicitud escrita, Gerencia la aprueba y un Administrador distinto del que
+aprobó la ejecuta. Nadie aprueba ni ejecuta cambios sobre su propia cuenta.{% endblock %}
+
+{% block contenido %}
+<section class="seccion" aria-labelledby="t-nueva">
+  <div class="seccion__encabezado">
+    <h2 id="t-nueva">Registrar solicitud de cuenta</h2>
+    <p>Escriba el nombre de usuario de la persona; la lista le sugiere los existentes.</p>
+  </div>
+  <form class="accion" id="form-nueva" autocomplete="off">
+    <div class="campos">
+      <label class="campo"><span>Tipo</span>
+        <select name="tipo" id="campo-tipo">
+          <option value="asignar_rol">Asignar rol</option>
+          <option value="desactivar">Desactivar cuenta</option>
+        </select></label>
+      <label class="campo"><span>Persona (nombre de usuario)</span>
+        <input name="usuario" list="lista-usuarios" required spellcheck="false" autocapitalize="off"
+               placeholder="p. ej. demo_tecnico"></label>
+      <label class="campo" id="envoltura-rol"><span>Rol</span>
+        <select name="rol_solicitado" id="campo-rol">
+          <option value="Tecnico de campo">Técnico de campo</option>
+          <option value="Verificador">Verificador</option>
+          <option value="Administrador">Administrador</option>
+          <option value="Auditor externo">Auditor externo</option>
+          <option value="Dueno de finca">Dueño de finca</option>
+          <option value="Gerencia de Certificacion">Gerencia de Certificación</option>
+        </select></label>
+    </div>
+    <label class="campo"><span>Solicitud escrita</span>
+      <textarea name="solicitud" maxlength="2000" required></textarea></label>
+    <div class="campos"><button class="boton boton--principal" type="submit">Registrar solicitud</button></div>
+    <ol class="constancias" aria-live="polite"></ol>
+  </form>
+</section>
+
+<section class="seccion" aria-labelledby="t-numero">
+  <div class="seccion__encabezado">
+    <h2 id="t-numero">Actuar sobre una solicitud por número</h2>
+    <p>La matriz no le da al Administrador lectura de las solicitudes, solo ejecutarlas: aquí
+       ejecuta una con el número que aparece al registrarla («Solicitud #1»). Gerencia también
+       puede aprobar por número.</p>
+  </div>
+  <form class="accion" id="form-numero" autocomplete="off">
+    <div class="campos">
+      <label class="campo"><span>Solicitud (número)</span>
+        <input type="number" name="id" min="1" inputmode="numeric" required></label>
+      <button class="boton" type="submit" name="accion" value="aprobar">Aprobar</button>
+      <button class="boton" type="submit" name="accion" value="ejecutar">Ejecutar</button>
+    </div>
+    <ol class="constancias" aria-live="polite"></ol>
+  </form>
+</section>
+
+<section class="seccion" aria-labelledby="t-registro">
+  <div class="seccion__encabezado"><h2 id="t-registro">Registro de solicitudes</h2></div>
+  <div id="registro" class="registro-contenedor" aria-live="polite"><p class="suave">Cargando el registro…</p></div>
+</section>
+{% endblock %}

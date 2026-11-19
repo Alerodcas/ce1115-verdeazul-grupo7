@@ -1,0 +1,40 @@
+{% extends "interfaz/base_sola.html" %}
+{% block titulo %}Elegir rol{% endblock %}
+{% block contenido %}
+  <div class="cabecera">
+    <h1>Elija con qué rol va a trabajar</h1>
+    {% if roles %}
+      <p>{{ user.get_username }}, su cuenta tiene {{ roles|length }} rol{{ roles|length|pluralize:"es" }}.
+         Lo que el sistema le permita depende del rol activo, y cada cambio de rol queda en la bitácora.</p>
+    {% endif %}
+  </div>
+
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+  {% if roles %}
+    <form method="post" action="{% url 'interfaz:rol' %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <ul class="roles">
+        {% for r in roles %}
+          <li class="rol-{{ r.clase }}">
+            <button type="submit" name="rol" value="{{ r.valor }}">
+              <span class="roles__nombre">{{ r.nombre }}</span>
+              <span class="roles__resumen">{{ r.resumen }}</span>
+              {% if r.valor == rol_actual %}<span class="roles__actual">Es su rol activo ahora</span>{% endif %}
+            </button>
+          </li>
+        {% endfor %}
+      </ul>
+    </form>
+  {% else %}
+    <p class="vacio">Su cuenta todavía no tiene ningún rol asignado. Pida a Administración que
+       registre una solicitud de cuenta a su nombre; cuando Gerencia la apruebe y se ejecute,
+       podrá elegir su rol aquí.</p>
+  {% endif %}
+
+  <form method="post" action="{% url 'interfaz:salir' %}">
+    {% csrf_token %}
+    <button class="boton boton--discreto" type="submit">Salir</button>
+  </form>
+{% endblock %}

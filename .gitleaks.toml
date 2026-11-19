@@ -33,4 +33,10 @@ regexes = [
   '''dev-only-insecure-key''',
   '''build-time-only''',
   '''POSTGRES_PASSWORD: verdeazul''',
+  # Marcadores de posicion de la documentacion y de los guiones de despliegue.
+  # Se permiten EXACTAMENTE estos literales, no un patron amplio: la regla
+  # neon-connection-string sigue disparando ante cualquier credencial real.
+  '''://USUARIO:CLAVE@''',
+  '''://verdeazul_owner:CLAVE@''',
+  '''://verdeazul:verdeazul@''',
 ]
