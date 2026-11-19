@@ -1,0 +1,74 @@
+{% extends "interfaz/base.html" %}
+{% load static %}
+{% block guiones %}<script src="{% static 'interfaz/js/certificados.js' %}" defer></script>{% endblock %}
+{% block descripcion %}Certificados de captura de carbono, firmados con RSA-PSS y SHA-256. Cualquiera
+puede verificar uno: si alguien cambia un solo dato del contenido, la firma deja de coincidir y el
+certificado se rechaza.{% endblock %}
+
+{% block contenido %}
+<p class="nota">El módulo de certificados todavía no consulta la matriz: emitir y leer solo exigen
+  una sesión iniciada, así que aquí no aparece una regla como <code>C3</code>. Cada constancia
+  lo dice tal cual.</p>
+
+<section class="seccion" aria-labelledby="t-emitir">
+  <div class="seccion__encabezado">
+    <h2 id="t-emitir">Emitir certificado</h2>
+    <p>Elija una medición aprobada: la finca y las toneladas se toman de ella.</p>
+  </div>
+
+  <form class="accion oculto" id="form-periodo" autocomplete="off">
+    <p>No hay un período de certificación abierto. Ábralo para poder emitir.</p>
+    <div class="campos">
+      <label class="campo campo--ancho"><span>Nombre del período</span>
+        <input name="name" maxlength="100" value="Período de certificación 2026" required></label>
+      <label class="campo"><span>Año</span>
+        <input type="number" name="year" min="2000" max="2100" value="2026" required></label>
+      <button class="boton" type="submit">Abrir período de certificación</button>
+    </div>
+    <ol class="constancias" aria-live="polite"></ol>
+  </form>
+
+  <form class="accion" id="form-emitir" autocomplete="off">
+    <div class="campos">
+      <label class="campo"><span>Período de certificación</span>
+        <select name="period" id="campo-period" required><option value="">Cargando…</option></select></label>
+      <label class="campo"><span>Medición aprobada</span>
+        <select name="medicion" id="campo-medicion"><option value="">Cargando…</option></select></label>
+      {# El módulo de certificados identifica la finca con un UUID: lo arma la interfaz a partir
+         de la medición elegida, así que nadie tiene que leerlo ni escribirlo. #}
+      <input type="hidden" name="finca_id" id="campo-finca-id">
+      <div class="campo campo--ancho"><span id="t-finca-elegida">Finca</span>
+        <output id="finca-elegida" class="dato" aria-labelledby="t-finca-elegida">Se toma de la medición que elija.</output></div>
+      <label class="campo"><span>Parcela</span>
+        <input name="parcela_id" maxlength="100" value="P-01" required></label>
+      <label class="campo"><span>Toneladas de CO2</span>
+        <input type="number" name="tons_co2" id="campo-tons" step="0.01" min="0.01" inputmode="decimal" required></label>
+      <button class="boton boton--principal" type="submit">Emitir certificado</button>
+    </div>
+    <p class="nota">La finca se toma de la medición elegida. El identificador interno que usa el módulo
+      de certificados lo arma la interfaz; aparece completo en el contenido firmado del certificado.</p>
+    <ol class="constancias" aria-live="polite"></ol>
+  </form>
+</section>
+
+<section class="seccion" aria-labelledby="t-verificar">
+  <div class="seccion__encabezado">
+    <h2 id="t-verificar">Verificar un certificado</h2>
+    <p>Pegue el certificado, o tráigalo desde el registro con «Llevar al verificador». Cambie un dato
+       y verifíquelo: se rechaza.</p>
+  </div>
+  <form class="accion" id="form-verificar" autocomplete="off">
+    <label class="campo"><span>Certificado (contenido, firma y clave pública)</span>
+      <textarea name="certificado" id="campo-certificado" class="mono" spellcheck="false" required></textarea></label>
+    <div class="campos"><button class="boton boton--principal" type="submit">Verificar</button></div>
+    <ol class="constancias" aria-live="polite"></ol>
+  </form>
+</section>
+
+<section class="seccion" aria-labelledby="t-registro">
+  <div class="seccion__encabezado">
+    <h2 id="t-registro">Registro de certificados</h2>
+  </div>
+  <div id="registro" class="registro-contenedor" aria-live="polite"><p class="suave">Cargando el registro…</p></div>
+</section>
+{% endblock %}

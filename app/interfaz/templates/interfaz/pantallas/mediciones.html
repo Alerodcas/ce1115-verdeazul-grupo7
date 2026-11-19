@@ -1,0 +1,38 @@
+{% extends "interfaz/base.html" %}
+{% load static %}
+{% block guiones %}<script src="{% static 'interfaz/js/mediciones.js' %}" defer></script>{% endblock %}
+{% block descripcion %}Mediciones de carbono por finca y período. Las rigen <code>C1</code> (el técnico
+registra y envía las suyas), <code>C2</code> (el verificador aprueba o devuelve las de otros) y
+<code>S1</code>/<code>S2</code> (cada quien ve solo lo de su alcance).{% endblock %}
+
+{% block contenido %}
+<section class="seccion" aria-labelledby="t-nueva">
+  <div class="seccion__encabezado">
+    <h2 id="t-nueva">Registrar medición</h2>
+    <p>Queda en borrador hasta que usted la envíe a verificación.</p>
+  </div>
+  <form class="accion" id="form-nueva" autocomplete="off">
+    <div class="campos">
+      <label class="campo"><span>Finca</span>
+        <select name="finca" id="campo-finca" required><option value="">Cargando…</option></select></label>
+      <label class="campo"><span>Período</span>
+        <select name="periodo" id="campo-periodo" required><option value="">Cargando…</option></select></label>
+      <label class="campo"><span>Valor</span>
+        <input type="number" name="valor" step="0.001" min="0" inputmode="decimal" required></label>
+      <label class="campo"><span>Unidad</span>
+        <input name="unidad" value="tCO2e" maxlength="20" required></label>
+      <button class="boton boton--principal" type="submit">Registrar medición</button>
+    </div>
+    <ol class="constancias" aria-live="polite"></ol>
+  </form>
+</section>
+
+<section class="seccion" aria-labelledby="t-registro">
+  <div class="seccion__encabezado">
+    <h2 id="t-registro">Registro de mediciones</h2>
+    <p>La interfaz ofrece toda acción que el estado admite. Quién puede hacerla lo decide el
+       servidor, y el resultado queda escrito bajo el registro con la regla que lo decidió.</p>
+  </div>
+  <div id="registro" class="registro-contenedor" aria-live="polite"><p class="suave">Cargando el registro…</p></div>
+</section>
+{% endblock %}

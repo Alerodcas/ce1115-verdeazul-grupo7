@@ -1,8 +1,9 @@
-from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.utils import timezone
-from .models import PeriodoMedida, Certificado
+from rest_framework import serializers
+
 from .crypto import verify_sign
+from .models import Certificado, PeriodoMedida
 
 User = get_user_model()
 
@@ -95,9 +96,9 @@ class CertificadoEmisionSerializer(serializers.ModelSerializer):
         parcela_id = attrs.get('parcela_id')
 
         # 1. Validación: El período debe estar ABIERTO para emitir certificados
-        if period and period.estado != 'ABIERTO':
+        if period and period.status != 'ABIERTO':
             raise serializers.ValidationError({
-                'period': f"No se pueden emitir certificados en el período '{period.nombre}' porque se encuentra CERRADO."
+                'period': f"No se pueden emitir certificados en el período '{period.name}' porque se encuentra CERRADO."
             })
 
         # 2. Validación (Regla C3): Unicidad de certificado VIGENTE por finca, parcela y período

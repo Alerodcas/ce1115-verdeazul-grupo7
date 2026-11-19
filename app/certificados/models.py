@@ -1,8 +1,29 @@
 import uuid
-from django.db import models
-from django.conf import settings
 
-class PeriodoMedida(models.Model):
+from django.conf import settings
+from django.db import models
+
+
+class ProtectedOperation(Exception):
+    """Se intentó borrar un objeto que, por diseño, no se borra."""
+
+class _SinBorradoQuerySet(models.QuerySet):
+    def delete(self):
+        raise ProtectedOperation("Los objetos de negocio no se borran.")
+
+
+class SinBorrado(models.Model):
+    objects = _SinBorradoQuerySet.as_manager()
+
+    class Meta:
+        abstract = True
+
+    def delete(self, *args, **kwargs):
+        raise ProtectedOperation(
+            f"{type(self).__name__} no se borra: se desactiva o cambia de estado."
+        )
+
+class PeriodoMedida(SinBorrado):
     """ Representa el período de medición de biomasa (ej. 2026-I). 
     La Gerencia de Certificación gestiona su estado 
     ('ABIERTO' / 'CERRADO') [1, 3]. """
@@ -31,7 +52,7 @@ class PeriodoMedida(models.Model):
     def __str__(self):
         return f"{self.name} [{self.status}]"
 
-class Certificado(models.Model):
+class Certificado(SinBorrado):
 
     STATUS_CHOICES = [('VIGENTE', 'Vigente'), ('REVOCADO', 'Revocado')]
 
@@ -49,12 +70,12 @@ class Certificado(models.Model):
     emitted_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.PROTECT,
-        related_name='certificados_emitidos'
+        related_name='certificados_firmados'
     )
 
     emitted_date = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='VIGENTE')
-    revocation_reasons = models.TextField(blank=True, null=True)
+    revocation_reasons = models.TextField(blank=True, default="")
 
     canonical_data = models.JSONField(help_text="Payload JSON Estructurado que fue firmado")
     sign_digital = models.TextField(help_text="Firma digital RSA-SHA256 en Base64")
@@ -63,11 +84,13 @@ class Certificado(models.Model):
     class Meta: 
         verbose_name = "Certificado de Carbono" 
         verbose_name_plural = "Certificados de Carbono" # Garantiza que no se emita más de un certificado vigente sobre la misma parcela y período (Regla C3) [2, 5] 
-        constraints = [ 
-            models.UniqueConstraint( fields=['finca_id', 'parcela_id', 'period'], 
-            condition=models.Q(status='VIGENTE'), 
-            name='unique_certificado_vigente_por_parcela_periodo' ) 
-            ] 
-        
-        def __str__(self): 
-            return f"Certificado {self.id} - Finca {self.finca_id} ({self.toneladas_co2} tCO2)"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["finca_id", "parcela_id", "period"],
+                condition=models.Q(status="VIGENTE"),
+                name="unique_certificado_vigente_por_parcela_periodo",
+            )
+        ]
+
+    def __str__(self):
+        return f"Certificado {self.id} - Finca {self.finca_id} ({self.tons_co2} tCO2)"

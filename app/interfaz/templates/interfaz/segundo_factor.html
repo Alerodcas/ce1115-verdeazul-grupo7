@@ -1,0 +1,30 @@
+{% extends "interfaz/base_sola.html" %}
+{% block titulo %}Segundo factor{% endblock %}
+{% block contenido %}
+  <div class="cabecera">
+    <h1>Confirmar segundo factor</h1>
+    <p>Escriba el código de seis dígitos de su aplicación autenticadora. La confirmación vale
+       {{ ventana }} minutos y la exigen aprobar y devolver mediciones (regla <code>C2</code>).</p>
+  </div>
+
+  {% if restante %}
+    <p class="aviso" role="status">Ya tiene el segundo factor confirmado; vence en
+       {{ restante }} segundos. Puede confirmarlo de nuevo para renovarlo.</p>
+  {% endif %}
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+
+  <form method="post" action="{% url 'interfaz:segundo_factor' %}">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}">
+    <label class="campo">
+      <span>Código</span>
+      <input class="codigo" name="codigo" inputmode="numeric" pattern="[0-9 ]*" maxlength="7"
+             autocomplete="one-time-code" required autofocus>
+    </label>
+    <button class="boton boton--principal" type="submit">Confirmar</button>
+  </form>
+
+  <p class="nota">¿No tiene el código en su aplicación? El secreto no se muestra en la web:
+     pídalo a Administración, que lo entrega por un canal aparte.</p>
+  <p><a href="{% if next %}{{ next }}{% else %}{% url 'interfaz:inicio' %}{% endif %}">Volver al registro</a></p>
+{% endblock %}
