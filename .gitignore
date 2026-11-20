@@ -51,3 +51,5 @@ temp/
 node_modules/
 *.log
 opa.exe
+
+gha-creds-*.json
