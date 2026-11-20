@@ -77,6 +77,7 @@ permisos_simples := {
 	"Administrador": {
 		"Finca": {"Create", "Read", "Update", "Deactivate"},
 		"Periodo": {"Read"},
+		"Cuenta": {"Read"},
 	},
 	"Auditor externo": {
 		"Finca": {"Read"},
