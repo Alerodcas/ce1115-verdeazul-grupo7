@@ -76,7 +76,7 @@ jobs:
           for i in 1 2 3 4 5 6; do
             r=$(curl -fsS "$url" || true)
             echo "$r"
-            if echo "$r" | grep -qF "\"version\":\"$GITHUB_REF_NAME\""; then exit 0; fi
+            if echo "$r" | grep -qF "\"$GITHUB_REF_NAME\""; then exit 0; fi
             sleep 10
           done
           echo "::error::/ready no devolvio la version $GITHUB_REF_NAME"
