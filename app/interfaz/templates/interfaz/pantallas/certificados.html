@@ -6,9 +6,10 @@ puede verificar uno: si alguien cambia un solo dato del contenido, la firma deja
 certificado se rechaza.{% endblock %}
 
 {% block contenido %}
-<p class="nota">El módulo de certificados todavía no consulta la matriz: emitir y leer solo exigen
-  una sesión iniciada, así que aquí no aparece una regla como <code>C3</code>. Cada constancia
-  lo dice tal cual.</p>
+<p class="nota">El módulo de certificados todavía no consulta la matriz: leer solo exige una sesión
+  iniciada, y emitir, además, que la medición no la haya creado usted (la parte de <code>C3</code>
+  que el módulo aplica por su cuenta). Por eso aquí no aparece la regla de la matriz. Cada
+  constancia lo dice tal cual.</p>
 
 <section class="seccion" aria-labelledby="t-emitir">
   <div class="seccion__encabezado">

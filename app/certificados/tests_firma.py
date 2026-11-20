@@ -7,6 +7,7 @@ certificado intacto se rechazaba. Ahora va firmado como texto con dos decimales.
 
 import json
 import os
+from datetime import date
 from decimal import Decimal
 from unittest import mock
 
@@ -16,6 +17,8 @@ from rest_framework.test import APIClient
 
 from certificados.crypto import generate_key_pair, verify_sign
 from certificados.models import Certificado, PeriodoMedida
+from certificados.serializers import uuid_de_finca
+from negocio.models import Finca, Medicion, Periodo
 
 CLAVE = "Clave-de-prueba-2026"
 
@@ -32,9 +35,18 @@ def como_el_navegador(datos):
 class FirmaSobreviveAlNavegadorTest(TestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.usuario = get_user_model().objects.create_user("emisor", password=CLAVE)
+        U = get_user_model()
+        cls.usuario = U.objects.create_user("emisor", password=CLAVE)
         cls.periodo = PeriodoMedida.objects.create(
             name="Período de prueba", year=2026, status="ABIERTO", modified_by=cls.usuario)
+        # La emisión exige una medición aprobada que el emisor no haya creado (C3).
+        tecnico = U.objects.create_user("tecnico", password=CLAVE)
+        cls.finca = Finca.objects.create(nombre="F", area_ha=1, propietario=tecnico)
+        cls.medicion = Medicion.objects.create(
+            finca=cls.finca,
+            periodo=Periodo.objects.create(
+                etiqueta="P", inicio=date(2026, 1, 1), fin=date(2026, 12, 31), abierto=True),
+            valor="10.000", estado=Medicion.Estado.APROBADA, creada_por=tecnico)
 
     def setUp(self):
         privada, _ = generate_key_pair()
@@ -46,8 +58,9 @@ class FirmaSobreviveAlNavegadorTest(TestCase):
 
     def emitir(self, toneladas, parcela):
         r = self.cliente.post("/certificados/emitir/", {
+            "medicion": self.medicion.pk,
             "period": str(self.periodo.id),
-            "finca_id": "00000000-0000-0000-0000-000000000001",
+            "finca_id": uuid_de_finca(self.finca.pk),
             "parcela_id": parcela,
             "tons_co2": toneladas,
         }, format="json")

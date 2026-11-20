@@ -5,6 +5,7 @@
   var R = window.Registro, el = R.el;
   var contenedor = document.getElementById('registro');
   var SIN_PEP = 'Este servicio no consulta la matriz: solo exige una sesión iniciada.';
+  var SIN_PEP_EMITIR = 'Este servicio no consulta la matriz: exige una sesión iniciada y que la medición no la haya creado usted (C3).';
   var ALGORITMO = 'RSA-PSS SHA-256';
   var periodos = new Map();
   var mediciones = new Map();
@@ -139,11 +140,12 @@
   });
 
   R.formulario(document.getElementById('form-emitir'), {
-    verbo: 'Emitir certificado', exito: 'Emitido', url: '/certificados/emitir/', sinPep: SIN_PEP,
+    verbo: 'Emitir certificado', exito: 'Emitido', url: '/certificados/emitir/', sinPep: SIN_PEP_EMITIR,
     datos: function (fd) {
       // El campo de la finca es oculto: si no hay medición elegida, se dice aquí y no se envía.
       if (!fd.get('finca_id')) return R.rechazo(document.getElementById('campo-medicion'), 'Elija una medición aprobada: la finca se toma de ella.');
-      return { period: fd.get('period'), finca_id: fd.get('finca_id'), parcela_id: fd.get('parcela_id'), tons_co2: fd.get('tons_co2') };
+      // La medición viaja para que el servidor aplique C3: quien la creó no emite su certificado.
+      return { medicion: fd.get('medicion'), period: fd.get('period'), finca_id: fd.get('finca_id'), parcela_id: fd.get('parcela_id'), tons_co2: fd.get('tons_co2') };
     },
     textoExito: function (c) { return 'Certificado ' + String(c.id).slice(0, 8) + ' firmado.'; },
     alTerminar: cargar,
