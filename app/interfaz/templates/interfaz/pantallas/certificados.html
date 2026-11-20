@@ -34,8 +34,8 @@ certificado se rechaza.{% endblock %}
         <select name="period" id="campo-period" required><option value="">Cargando…</option></select></label>
       <label class="campo"><span>Medición aprobada</span>
         <select name="medicion" id="campo-medicion"><option value="">Cargando…</option></select></label>
-      {# El módulo de certificados identifica la finca con un UUID: lo arma la interfaz a partir
-         de la medición elegida, así que nadie tiene que leerlo ni escribirlo. #}
+      {% comment %}El módulo de certificados identifica la finca con un UUID: lo arma la interfaz a partir
+         de la medición elegida, así que nadie tiene que leerlo ni escribirlo.{% endcomment %}
       <input type="hidden" name="finca_id" id="campo-finca-id">
       <div class="campo campo--ancho"><span id="t-finca-elegida">Finca</span>
         <output id="finca-elegida" class="dato" aria-labelledby="t-finca-elegida">Se toma de la medición que elija.</output></div>
