@@ -1,8 +1,13 @@
+import logging
+
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import generics, permissions, status, viewsets
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+from auditoria.models import ErrorBitacora
+from auditoria.servicio import registrar
 
 from .crypto import get_private_key_pem, get_public_from_private_pem_key, sign_data
 from .models import Certificado, PeriodoMedida
@@ -15,6 +20,7 @@ from .serializers import (
 )
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 class PeriodoMedidaViewSet(viewsets.ModelViewSet):
     """
@@ -62,6 +68,21 @@ class CertificadoEmisionView(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        # Separación de funciones (C3, es_autor): quien creó la medición no emite su
+        # certificado, aunque además tenga el rol de Verificador. La medición no se
+        # guarda en el certificado; solo sirve para esta comprobación.
+        medicion = serializer.validated_data.pop('medicion')
+        if medicion.creada_por_id == request.user.pk:
+            motivo = "No puede emitir el certificado de una medición que usted creó (C3)."
+            try:
+                registrar(
+                    request, accion="Create", resultado="denegado",
+                    objeto_tipo="Certificado", objeto_id=str(medicion.pk), motivo=motivo,
+                )
+            except ErrorBitacora:
+                logger.exception("No se pudo registrar una denegación; se deniega igual.")
+            return Response({"detail": motivo}, status=status.HTTP_403_FORBIDDEN)
 
         period = serializer.validated_data['period']
         finca_id = str(serializer.validated_data['finca_id'])

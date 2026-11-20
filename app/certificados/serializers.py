@@ -2,10 +2,21 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from rest_framework import serializers
 
+from negocio.models import Medicion
+
 from .crypto import verify_sign
 from .models import Certificado, PeriodoMedida
 
 User = get_user_model()
+
+
+def uuid_de_finca(finca_pk) -> str:
+    """UUID con el que el módulo de certificados nombra una finca del registro.
+
+    Es el mismo patrón que arma la interfaz (certificados.js, uuidDeFinca): el número
+    de la finca, en decimal, relleno con ceros en el último grupo.
+    """
+    return "00000000-0000-0000-0000-" + str(finca_pk).zfill(12)
 
 
 class PeriodoMedidaSerializer(serializers.ModelSerializer):
@@ -55,13 +66,18 @@ class CertificadoEmisionSerializer(serializers.ModelSerializer):
     """
     Serializador para la emisión de nuevos certificados de captura de carbono.
     Valida la apertura del período y la regla de unicidad por parcela/período (Regla C3).
+    Exige la medición de origen: aprobada y de la misma finca. Que quien emite no sea su
+    autor lo comprueba la vista, porque es una denegación y queda en la bitácora.
     """
     emitted_by_username = serializers.ReadOnlyField(source='emitted_by.username')
+    # Solo de entrada: no se guarda en el certificado, sirve para aplicar C3 al emitir.
+    medicion = serializers.PrimaryKeyRelatedField(queryset=Medicion.objects.all(), write_only=True)
 
     class Meta:
         model = Certificado
         fields = [
             'id',
+            'medicion',
             'period',
             'finca_id',
             'parcela_id',
@@ -90,10 +106,23 @@ class CertificadoEmisionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Las toneladas de CO2 deben ser un valor positivo mayor a cero.")
         return value
 
+    def validate_medicion(self, value):
+        if value.estado != Medicion.Estado.APROBADA:
+            raise serializers.ValidationError("Solo se emiten certificados sobre mediciones aprobadas.")
+        return value
+
     def validate(self, attrs):
         period = attrs.get('period')
         finca_id = attrs.get('finca_id')
         parcela_id = attrs.get('parcela_id')
+        medicion = attrs.get('medicion')
+
+        # 0. La finca del certificado es la de la medición: si no, bastaría con citar la
+        #    medición de otra persona para certificar una finca cualquiera.
+        if medicion and str(finca_id) != uuid_de_finca(medicion.finca_id):
+            raise serializers.ValidationError({
+                'finca_id': "La finca no corresponde a la medición elegida."
+            })
 
         # 1. Validación: El período debe estar ABIERTO para emitir certificados
         if period and period.status != 'ABIERTO':
