@@ -119,7 +119,7 @@ spec:
                   key: latest
             # Clave privada de firma de certificados (responsable: Luis).
             # Se inyecta igual que las demás: el código nunca la ve en disco.
-            - name: CERT_SIGNING_KEY
+            - name: VERDEAZUL_CERT_SIGNING_KEY
               valueFrom:
                 secretKeyRef:
                   name: verdeazul-cert-signing-key

@@ -312,6 +312,21 @@ class PlantillasTest(TestCase):
             self.assertContains(r, "Gerencia de Certificación")
             self.assertContains(r, "Versión")
 
+    def test_ningun_comentario_de_plantilla_llega_a_la_pagina(self):
+        """{# #} es de una sola línea: partido en dos, Django lo pinta como texto visible."""
+        u = get_user_model().objects.create_user("g", password=CLAVE)
+        u.groups.add(Group.objects.create(name="Gerencia de Certificacion"))
+        c = Client()
+        c.force_login(u)
+        s = c.session
+        s["rol_activo"] = "Gerencia de Certificacion"
+        s.save()
+        pantallas = (Path(__file__).parent / "templates" / "interfaz" / "pantallas").glob("*.html")
+        for p in sorted(a.stem for a in pantallas):
+            r = c.get(f"/registro/{p}/")
+            self.assertEqual(r.status_code, 200, p)
+            self.assertNotIn("{#", r.content.decode(), p)
+
 
     def test_cada_static_apunta_a_un_archivo_que_existe(self):
         """Un {% static %} roto rompe collectstatic y la imagen de Docker."""

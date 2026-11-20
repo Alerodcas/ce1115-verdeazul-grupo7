@@ -112,5 +112,5 @@ if [[ "${PUBLIC_HOST}" == ".run.app" ]]; then
     echo "y volver a correr este script para fijar ALLOWED_HOSTS a la URL exacta."
 else
     echo "Comprobación rápida:"
-    echo "    curl -sI ${URL}/healthz | head -1"
+    echo "    curl -s ${URL}/ready"
 fi

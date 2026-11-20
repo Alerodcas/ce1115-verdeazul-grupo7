@@ -34,7 +34,7 @@ gcloud run jobs "${ACCION}" "${JOB}" \
     --service-account="${RUNTIME_SA}" \
     --max-retries=1 \
     --task-timeout=10m \
-    --set-env-vars="DJANGO_DEBUG=False,DJANGO_ALLOWED_HOSTS=${PUBLIC_HOST:-.run.app}" \
+    --set-env-vars="^@^DJANGO_DEBUG=False@DJANGO_ALLOWED_HOSTS=${PUBLIC_HOST:-.run.app}" \
     --set-secrets="DJANGO_SECRET_KEY=verdeazul-django-secret-key:latest,DATABASE_URL=verdeazul-database-url:latest" \
     --command="python" \
     --args="manage.py,migrate,--noinput" \

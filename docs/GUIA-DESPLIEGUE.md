@@ -184,6 +184,21 @@ grupo y de donde se haya copiado. Si pasó por un chat, se considera comprometid
 rotar la contraseña desde la consola de Neon y cargar una versión nueva del
 secreto.
 
+> **Lección de una caída en producción — clave de firma de certificados.**
+> Toda emisión de certificados respondió HTTP 500 por esto; que no se repita:
+>
+> - **Nombre de la variable:** el nombre oficial es `VERDEAZUL_CERT_SIGNING_KEY`
+>   (así lo inyecta `deploy/service.yaml` y así está en `.env`). `crypto.py` acepta
+>   también `CERT_SIGNING_KEY` como alias, pero no hay que usar dos nombres.
+> - **Contenido del secreto:** `verdeazul-cert-signing-key` tiene que contener una
+>   clave privada PEM real, subida desde un archivo:
+>   `gcloud secrets versions add verdeazul-cert-signing-key --data-file=clave.pem`.
+>   Nunca un valor provisional como `pendiente`, y nunca la clave pegada en línea:
+>   así se pierden los saltos de línea y la carga falla con `MalformedFraming`.
+>
+> Ninguno de los dos fallos se ve en desarrollo local, porque ahí la clave sale
+> de `.env`. Solo aparecen en Cloud Run.
+
 > **Captura para el informe (sección 5.1.3):** la pantalla de Secret Manager con
 > los tres secretos listados y sus versiones. Que se vean los nombres y las
 > fechas, nunca un valor.
