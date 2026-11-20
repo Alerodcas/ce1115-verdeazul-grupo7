@@ -131,6 +131,15 @@ test_administrador_gestiona_fincas_y_lee_periodo if {
 	}
 }
 
+test_administrador_lee_cuentas if {
+	authz.allow with input as {
+		"rol_activo": "Administrador",
+		"objeto_tipo": "Cuenta",
+		"accion": "Read",
+		"atributos": {},
+	}
+}
+
 test_auditor_lee_todo_y_descarga_certificado if {
 	input_auditor := {
 		"rol_activo": "Auditor externo",
