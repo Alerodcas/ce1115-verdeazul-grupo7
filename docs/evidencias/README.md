@@ -20,6 +20,8 @@ cadena de conexión ni una clave en pantalla.
 | `E06-permisos-separados.png` | `verdeazul-run` puede leer los secretos y `verdeazul-deploy` **no**: quien despliega no accede a producción | Gestión de secretos (12 pts) |
 | `E07-ci-verde.png` | El CI pasa gitleaks, bandit, pip-audit, `check --deploy`, pruebas, `opa test`, Trivy y la comprobación de que ninguna imagen corre como root | Contenedores + informe |
 | `E08-dependabot.png` | Dependabot activo y con alertas atendidas — **responsable: Eder** | Dependabot (parte de 10 pts) |
+| `E09-bitacora-exito-y-denegado.png` | `/bitacora/` con entradas de acciones exitosas y de intentos denegados (`AUTHZ.DENY`) tras la demostración, con actor, rol, acción, resultado y hashes — **responsable: Daniel** | Registro de auditoría (alcance 2.1.4) |
+| `E10-bitacora-cadena-ok.png` | `/bitacora/verificar/` responde 200 con `ok: true` y el número de entradas revisadas: la cadena de hashes está íntegra — **responsable: Daniel** | Registro de auditoría (alcance 2.1.4) |
 
 ## Cómo se obtuvieron las de terminal
 
