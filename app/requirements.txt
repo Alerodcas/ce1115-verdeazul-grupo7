@@ -9,7 +9,7 @@
 
 Django~=5.2.0                 # LTS, soporte hasta abril 2028
 djangorestframework~=3.18.2
-psycopg[binary]~=3.2          # driver PostgreSQL 3.x (Neon)
+psycopg[binary]~=3.3          # driver PostgreSQL 3.x (Neon)
 dj-database-url~=2.3          # parsea DATABASE_URL de Neon
 gunicorn~=23.0                # servidor WSGI
 whitenoise~=6.12               # estáticos sin bucket externo
