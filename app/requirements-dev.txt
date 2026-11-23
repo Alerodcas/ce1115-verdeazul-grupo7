@@ -4,4 +4,4 @@
 
 bandit~=1.8        # análisis estático de seguridad en Python
 pip-audit~=2.10     # vulnerabilidades conocidas en dependencias
-ruff~=0.9          # lint y formato
+ruff~=0.17          # lint y formato
